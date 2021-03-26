@@ -211,14 +211,14 @@ describe 'drive', ->
           jam = sinon.match
             name: 'Whiteboard: New Puzzle'
             mimeType: 'application/vnd.google-apps.jam'
-            parents: sinon.match.some sinon.match id: 'newpuzzle'
+            parents: sinon.match.some sinon.match 'newpuzzle'
           files.expects('create').withArgs sinon.match
             resource: jam
           .resolves data:
             id: 'newjam'
             name: 'Whiteboard: New Puzzle'
             mimeType: 'application/vnd.google-apps.jam'
-            parents: [id: 'newpuzzle']
+            parents: ['newpuzzle']
           permissions.expects('list').withArgs sinon.match
             fileId: 'newjam'
           .resolves data: permissions: []
@@ -280,7 +280,7 @@ describe 'drive', ->
             id: 'newjam'
             title: 'Whiteboard: New Puzzle'
             mimeType: 'application/vnd.google-apps.jam'
-            parents: [id: 'newpuzzle']
+            parents: ['newpuzzle']
           ]
           permissions.expects('list').withArgs sinon.match
             fileId: 'newjam'
