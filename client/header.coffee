@@ -1,8 +1,9 @@
 'use strict'
 
-import canonical from '../lib/imports/canonical.coffee'
+import canonical from '/lib/imports/canonical.coffee'
+import md5 from '/lib/imports/md5.coffee'
 import jitsiUrl from './imports/jitsi.coffee'
-import { emailFromNickObject } from './imports/nickEmail.coffee'
+import { hashFromNickObject } from './imports/nickEmail.coffee'
 import botuser from './imports/botuser.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 
@@ -91,16 +92,6 @@ Template.registerHelper 'lotsOfPeople', (args) ->
   count = (keyword_or_positional 'count', args).count
   return count > 4
 
-# gravatars
-Template.registerHelper 'gravatar', (args) ->
-  args = keyword_or_positional 'id', args
-  args.secure = true
-  args.image ?= 'wavatar'
-  g = $.gravatar(args.id, args)
-  # hacky cross-platform version of 'outerHTML'
-  html = $('<div>').append( g.eq(0).clone() ).html()
-  return new Spacebars.SafeString(html)
-
 today_fmt = Intl.DateTimeFormat navigator.language,
   hour: 'numeric'
   minute: 'numeric'
@@ -152,10 +143,6 @@ Template.registerHelper 'pretty_ts', (args) ->
 
 ############## log in/protect/mute panel ####################
 Template.header_loginmute.helpers
-  volumeIcon: ->
-    if 'true' is reactiveLocalStorage.getItem 'mute' then 'fa-volume-mute' else 'fa-volume-up'
-  volumeTitle: ->
-    if 'true' is reactiveLocalStorage.getItem 'mute' then 'Muted' else 'Click to mute'
   sessionNick: -> # TODO(torgen): replace with currentUser
     user = Meteor.user()
     return unless user?
@@ -163,7 +150,7 @@ Template.header_loginmute.helpers
       name: user.nickname
       canon: user._id
       realname: user.real_name or user.nickname
-      gravatar: emailFromNickObject user
+      gravatar_md5: hashFromNickObject user
     }
 
 Template.header_loginmute.events
@@ -174,8 +161,6 @@ Template.header_loginmute.events
     share.Router.navigate "/edit", {trigger: true}
   "click .bb-protect": (event, template) ->
     share.Router.navigate "/", {trigger: true}
-  'click button.mute': (event, template) ->
-    reactiveLocalStorage.setItem 'mute', 'true' isnt reactiveLocalStorage.getItem 'mute'
 
 Template.connection_button.helpers
   connectStatus: Meteor.status
@@ -377,6 +362,7 @@ Template.header_breadcrumbs.helpers
       Session.get 'RINGHUNTERS_FOLDER'
     when 'puzzles'
       model.Puzzles.findOne(Session.get 'id')?.drive
+  generalChat: -> Session.equals 'room_name', 'general/0'
 
 Template.header_breadcrumbs.events
   "click .bb-upload-file": (event, template) ->
@@ -442,6 +428,10 @@ uploadToDriveFolder = share.uploadToDriveFolder = (folder, callback) ->
 ############## nick selection ####################
 
 Template.header_nickmodal_contents.onCreated ->
+  @suppressRender = new ReactiveVar Meteor.loggingIn()
+  @autorun =>
+    @suppressRender.set false unless Meteor.loggingIn()
+  @gravatarHash = new ReactiveVar md5('')
   # we'd need to subscribe to 'all-nicks' here if we didn't have a permanent
   # subscription to it (in main.coffee)
   this.typeaheadSource = (query,process) =>
@@ -452,26 +442,23 @@ Template.header_nickmodal_contents.onCreated ->
     n = if query then Meteor.users.findOne canonical query else undefined
     if (n or options?.force)
       realname = n?.real_name
-      gravatar = n?.gravatar
       $('#nickRealname').val(realname or '')
-      $('#nickEmail').val(gravatar or '')
-    this.updateGravatar(query)
+      $('#nickEmail').val('')
+    this.updateGravatar(n)
   this.updateGravatar = (q) =>
-    email = $('#nickEmail').val() or "#{q or model.canonical($('#nickInput').val())}@#{settings.DEFAULT_HOST}"
-    gravatar = $.gravatar email,
-      image: 'wavatar' # 'monsterid'
-      classes: 'img-polaroid'
-      secure: true
-    container = $(this.find('.gravatar'))
-    if container.find('img').length
-      container.find('img').attr('src', gravatar.attr('src'))
-    else
-      container.append(gravatar)
+    if $('#nickEmail').val()
+      @gravatarHash.set md5 $('#nickEmail').val()
+      return
+    unless q?
+      q = _id: canonical($('#nickInput').val())
+    @gravatarHash.set hashFromNickObject q
 nickInput = new Tracker.Dependency
 Template.header_nickmodal_contents.helpers
+  suppressRender: -> Template.instance().suppressRender.get()
   disabled: ->
     nickInput.depend()
     Meteor.loggingIn() or not $('#nickInput').val()
+  hash: -> Template.instance().gravatarHash.get()
 Template.header_nickmodal_contents.onRendered ->
   $('#nickSuccess').val('false')
   $('#nickPickModal').modal keyboard: false, backdrop:"static"
@@ -497,8 +484,7 @@ Template.header_nickmodal_contents.events
     $('#nickEmail').select() if event.which is 13
   "keydown #nickEmail": (event, template) ->
     $('#nickPick').submit() if event.which is 13
-  "input #nickEmail": (event, template) ->
-    template.updateGravatar()
+  "input #nickEmail": _.debounce ((event, template) -> template.updateGravatar()), 500
   'submit #nickPick': (event, template) ->
     nick = $("#nickInput").val().replace(/^\s+|\s+$/g,"") #trim
     return false unless nick
@@ -507,6 +493,9 @@ Template.header_nickmodal_contents.events
         le = $("#loginError")
         if err.reason?
           le.text err.reason
+        if err.details?.field?
+          template.$('[data-argument]').removeClass 'error'
+          template.$("[data-argument=\"#{err.details.field}\"]").addClass 'error'
     return false
 
 ############## confirmation dialog ########################
@@ -529,64 +518,66 @@ confirmationDialog = share.confirmationDialog = (options) ->
   Template.header_confirmmodal_contents.cancel = true
   Session.set 'confirmModalVisible', (options or Object.create(null))
 
-OPLOG_COLLAPSE_LIMIT = 10
-
-############## operation log in header ####################
-Template.header_lastupdates.helpers
-  lastupdates: ->
-    ologs = model.Messages.find {room_name: "oplog/0", dawn_of_time: $ne: true}, \
-          {sort: [["timestamp","desc"]], limit: OPLOG_COLLAPSE_LIMIT}
-    ologs = ologs.fetch()
-    # now look through the entries and collect similar logs
-    # this way we can say "New puzzles: X, Y, and Z" instead of just
-    # "New Puzzle: Z"
-    return '' unless ologs && ologs.length
-    message = [ ologs[0] ]
-    for ol in ologs[1..]
-      if ol.body is message[0].body and ol.type is message[0].type
-        message.push ol
-      else
-        break
-    type = ''
-    if message[0].id
-      type = ' ' + model.pretty_collection(message[0].type) + \
-        (if message.length > 1 then 's ' else ' ')
-    uniq = (array) ->
-      seen = Object.create(null)
-      ((seen[o.id]=o) for o in array when not (o.id of seen))
-    return {
-      timestamp: message[0].timestamp
-      message: message[0].body + type
-      nick: message[0].nick
-      objects: uniq({type:m.type,id:m.id} for m in message)
-    }
-
-# subscribe when this template is in use/unsubscribe when it is destroyed
-Template.header_lastupdates.onCreated ->
-  this.autorun =>
-    this.subscribe 'recent-messages', 'oplog/0', OPLOG_COLLAPSE_LIMIT
-# add tooltip to 'more' links
-do ->
-  for t in ['header_lastupdates', 'header_lastchats']
-    Template[t].onRendered ->
-      $(this.findAll('.right a[title]')).tooltip placement: 'left'
-
 RECENT_GENERAL_LIMIT = 2
 
-############## chat log in header ####################
+############## operation/chat log in header ####################
 Template.header_lastchats.helpers
   lastchats: ->
-    m = model.Messages.find {
-      room_name: "general/0", system: {$ne: true}, bodyIsHtml: {$ne: true}
+    query = if Session.equals('room_name', 'general/0')
+      'oplog/0'
+    else
+      $in: ['oplog/0', 'general/0']
+    model.Messages.find {
+      room_name: query, system: {$ne: true}, bodyIsHtml: {$ne: true}, header_ignore: {$ne: true}
     }, {sort: [["timestamp","desc"]], limit: RECENT_GENERAL_LIMIT}
-    m = m.fetch().reverse()
-    return m
   msgbody: ->
     if this.bodyIsHtml then new Spacebars.SafeString(this.body) else this.body
-  roomname: -> settings.GENERAL_ROOM_NAME
+  roomname: ->
+    if Session.equals('room_name', 'general/0')
+      'Updates'
+    else
+      settings.GENERAL_ROOM_NAME
+  roomicon: ->
+    query = if Session.equals('room_name', 'general/0')
+      'newspaper'
+    else
+      'comments'
+  icon_label: ->
+    if /Added/.test @body
+      if @type is 'puzzles'
+        ['puzzle-piece', 'success']
+      else if @type is 'rounds'
+        ['globe', 'success']
+      else if @type is 'quips'
+        ['comment-dots']
+      else
+        ['plus']
+    else if /Deleted answer/.test @body
+      ['sad-tear', 'important']
+    else if /Deleted/.test @body
+      ['trash-alt', 'info']
+    else if /Renamed/.test @body
+      ['id-badge', 'info']
+    else if /New.*submitted for/.test @body
+      ['phone', 'success']
+    else if /Canceled call-in/.test @body
+      ['phone-slash', 'important']
+    else if /Help requested/.test @body
+      ['ambulance', 'warning']
+    else if /Help request cancelled/.test @body
+      ['lightbulb', 'success']
+    else if /Found an answer/.test @body
+      ['trophy', 'success']
+    else if /reports incorrect answer/.test @body
+      ['heart-broken', 'important']
+    else if @stream is 'announcements'
+      ['bullhorn', 'info']
+    else
+      ['exclamation-circle']
 
 # subscribe when this template is in use/unsubscribe when it is destroyed
 Template.header_lastchats.onCreated ->
   return if settings.BB_DISABLE_RINGHUNTERS_HEADER
   @autorun =>
-    @subscribe 'recent-header-messages'
+    this.subscribe 'recent-messages', 'oplog/0', 2
+    @subscribe 'recent-header-messages' unless Session.equals('room_name', 'general/0')

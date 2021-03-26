@@ -1,23 +1,28 @@
 <template name="puzzle_info">
-<div class="bb-puzzle-frame" style="background-color: {{color}}">
+<div class="bb-puzzle-frame">
 <div class="{{#if stuck}}bb-status-stuck{{else if puzzle.solved}}bb-status-solved{{/if}}">
-  <h1>{{puzzle.name}} {{>favorite puzzle}}
-    {{#if puzzle.link}}(<a href="{{puzzle.link}}" target="_blank">link<i class="fas fa-expand-arrows-alt"></i></a>){{/if}}
-  </h1>
+  <h2>
+    {{> header_breadcrumbs_unsolved_buttons puzzle}}
+    {{#if puzzle.drive}}<a class="bb-drive-link" title="Open Drive folder in new window" target="_blank" href="{{drive_link puzzle.drive}}"><i class="fab fa-google-drive"></i></a>{{/if}}
+    {{>favorite puzzle}}
+    {{#if puzzle.link}}<a href="{{puzzle.link}}" target="_blank" title="Open puzzle in new window"><i class="fas fa-link"></i></a>{{/if}}
+  </h2>
+  
+  <h1>{{puzzle.name}}</h1>
 </div>
-<table><tbody>
+<table class="bb-puzzle-info-tags"><tbody>
 {{#with puzzle}}
   {{#if solved}}
     <tr><td class="rightanswer">Answer:</td><td class="answer">{{tag "answer"}}</td></tr>
     <tr><td class="backsolve">{{#if tag "backsolved"}}(backsolved){{/if}}</td><td class="timestamp">{{pretty_ts solved}}</td></tr>
   {{/if}}
-  <tr><td>Mechanics:</td><td>{{> puzzle_mechanics}}</td></tr>
+  <tr><td>Mechanics:</td><td>{{> puzzle_mechanics}}{{#each mechanics}}<span class="label">{{mechanicName}}</span>{{/each}}</td></tr>
 {{/with}}
 {{#each cares in unsetcaredabout}}
-  <tr><td>{{cares.name}}:</td><td class="wanted">(wanted by {{cares.meta}})</td></tr>
+  <tr><td>{{cares.name}}:</td><td class="wanted">(wanted by <span title="{{cares.meta}}">{{abbrev cares.meta}}</span>)</td></tr>
 {{/each}}
 {{#each mtag in metatags}}
-  <tr><td>{{mtag.name}}:<br><i>(from {{mtag.meta}})</i></td><td>{{mtag.value}}</td></tr>
+  <tr><td>{{mtag.name}}:<br><i>(from <span title="{{mtag.meta}}">{{abbrev mtag.meta}}</span>)</i></td><td>{{mtag.value}}</td></tr>
 {{/each}}
 {{#with puzzle}}
   {{#each tags}}
@@ -45,7 +50,7 @@
       <tbody>
       {{#each cs}}
         <tr>
-          <td class="answer">{{answer}}</td>
+          <td id="answer-{{_id}}" class="answer">{{answer}}</td>
           <td class="bb-callin-metadata">
             {{> callin_type_dropdown}}
             {{#let since=(pretty_ts timestamp=created style="seconds_since")}}
@@ -59,10 +64,12 @@
             {{#if equal status "pending"}}
               {{>callin_resolution_buttons callin=this compact=true}}
               {{#with submitted_by}}
-                <span title="Submitted by {{nickOrName this}}">
+                <span class="bb-answer-submitter" title="Submitted by {{nickOrName this}}">
                   <i class="fas fa-phone"></i>
-                  {{gravatar id=nickEmail size=20}}
+                  {{>gravatar nick=this size=20}}
                 </span>
+              {{else}}
+                {{>callin_copy_and_go callin=this hunt_link=../puzzle.link}}
               {{/with}}
             {{else}}
               <span class="btn disabled active btn-mini btn-{{#if equal status "accepted"}}success
@@ -162,8 +169,8 @@
 </template>
 
 <template name="puzzle_summon_button">
-<button class="btn {{#if currentPageEquals "chat"}}btn-small{{/if}} bb-summon-btn {{#if stuck}}stuck{{else}}unstuck{{/if}} btn-inverse">
-{{#unless currentPageEquals "chat"}}<i class="fas fa-{{#if stuck}}exclama{{else}}ques{{/if}}tion-circle"></i>{{/unless}}
+<button class="btn btn-small bb-summon-btn {{#if stuck}}stuck{{else}}unstuck{{/if}} btn-inverse">
+{{#unless currentPageEquals "chat"}}<i class="fas fa-{{#if stuck}}lightbulb{{else}}ambulance{{/if}}"></i>{{/unless}}
 {{#if stuck}}Clear STUCK status{{else}}Flag as STUCK{{/if}}
 </button>
 </template>
@@ -231,9 +238,9 @@
 </template>
 
 <template name="puzzle_callin_button">
-<button class="btn {{#if currentPageEquals "chat"}}btn-small{{/if}} bb-callin-btn btn-inverse">
-{{! TODO: after bootstrap upgrade, change icon to earphone }}
-{{#unless currentPageEquals "chat"}}<i class="fas fa-phone"></i>{{/unless}}
+<button class="btn btn-small bb-callin-btn btn-inverse"
+  title="Request call-in">
+<i class="fas fa-phone"></i>
 Request Call-In
 </button>
 </template>

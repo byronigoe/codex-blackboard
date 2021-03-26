@@ -1,14 +1,14 @@
 'use strict'
 
+import canonical from '/lib/imports/canonical.coffee'
 import jitsiUrl from './imports/jitsi.coffee'
-import { nickEmail } from './imports/nickEmail.coffee'
+import { nickHash } from './imports/nickEmail.coffee'
 import puzzleColor, { cssColorToHex, hexToCssColor } from './imports/objectColor.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 
 model = share.model # import
 settings = share.settings # import
 
-NAVBAR_HEIGHT = 73 # keep in sync with @navbar-height in blackboard.less
 SOUND_THRESHOLD_MS = 30*1000 # 30 seconds
 
 blackboard = {} # store page global state
@@ -213,6 +213,9 @@ Template.blackboard.helpers
     model.Puzzles.find query
   stuckPuzzles: -> model.Puzzles.find
     'tags.status.value': /^stuck/i
+  hasJitsiLocalStorage: ->
+    reactiveLocalStorage.getItem 'jitsiLocalStorage'
+  driveFolder: -> Session.get 'RINGHUNTERS_FOLDER'
 
 Template.blackboard_status_grid.helpers
   rounds: round_helper
@@ -247,15 +250,14 @@ Template.blackboard.onDestroyed ->
 Template.blackboard.events
   "click .bb-menu-button .btn": (event, template) ->
     template.$('.bb-menu-drawer').modal 'show'
+  'click .bb-menu-drawer a.bb-clear-jitsi-storage': (event, template) ->
+    reactiveLocalStorage.removeItem 'jitsiLocalStorage'
   'click .bb-menu-drawer a': (event, template) ->
     template.$('.bb-menu-drawer').modal 'hide'
     href = event.target.getAttribute 'href'
     if href.match /^#/
       event.preventDefault()
       $(href).get(0)?.scrollIntoView block: 'center', behavior: 'smooth'
-
-Template.nick_presence.helpers
-  email: -> nickEmail @nick
 
 share.find_bbedit = (event) ->
   edit = $(event.currentTarget).closest('*[data-bbedit]').attr('data-bbedit')
@@ -353,6 +355,15 @@ Template.blackboard_round.helpers
     r.reverse() if 'true' is reactiveLocalStorage.getItem 'sortReverse'
     return r
   unassigned: unassigned_helper
+  showRound: ->
+    return true if Session.get('editing')?
+    return true unless 'true' is reactiveLocalStorage.getItem 'hideSolvedMeta'
+    for id, index in @puzzles
+      puzzle = model.Puzzles.findOne({_id: id, solved: {$eq: null}, $or: [{feedsInto: {$size: 0}}, {puzzles: {$ne: null}}]})
+      return true if puzzle?
+    return false
+
+
 
 Template.blackboard_round.events
   'click .bb-round-buttons .bb-move-down': (event, template) ->
@@ -405,17 +416,17 @@ processBlackboardEdit =
       return Meteor.call 'deleteTag', {type:n.type, object:id, name:canon}
     t = model.collection(n.type).findOne(id).tags[canon]
     Meteor.call 'setTag', {type:n.type, object:id, name:text, value:t.value}, (error,result) ->
-      if (canon isnt model.canonical(text)) and (not error)
+      if (canon isnt canonical(text)) and (not error)
         Meteor.call 'deleteTag', {type:n.type, object:id, name:t.name}
   tags_value: (text, id, canon) ->
     n = model.Names.findOne(id)
     t = model.collection(n.type).findOne(id).tags[canon]
     # special case for 'status' tag, which might not previously exist
     for special in ['Status', 'Answer']
-      if (not t) and canon is model.canonical(special)
+      if (not t) and canon is canonical(special)
         t =
           name: special
-          canon: model.canonical(special)
+          canon: canonical special
           value: ''
     # set tag (overwriting previous value)
     Meteor.call 'setTag', {type:n.type, object:id, name:t.name, value:text}
@@ -618,6 +629,7 @@ Template.blackboard.onCreated -> this.autorun =>
 # Update 'currentTime' every minute or so to allow pretty_ts to magically
 # update
 Meteor.startup ->
+  Session.set "currentTime", model.UTCNow()
   Meteor.setInterval ->
     Session.set "currentTime", model.UTCNow()
   , 60*1000

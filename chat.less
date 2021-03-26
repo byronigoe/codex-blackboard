@@ -1,12 +1,12 @@
 .navbar-inverse {
-    box-shadow: 0px 2px 4px #777;
+    box-shadow: 0px 2px 4px rgba(0,0,0,0.5);
 }
 
 .bb-chat-callin {
     position: fixed; top: 5px; left: 10px; z-index: 1050;
     &.solved {
       top: 0; left: 0;
-      background: white;
+      background: var(--bg-color);
       padding-left: 15px; padding-right: 8px; padding-bottom: 1px;
       border: 1px solid #888;
       border-bottom-right-radius: 5px;
@@ -14,17 +14,14 @@
 }
 
 .bb-content-area {
-  background-color: white;
-  box-shadow: 0px 2px 4px #777;
+  background-color: var(--bg-color);
+  box-shadow: 0px 2px 4px rgba(0,0,0,0.5);
 }
 .bb-puzzleround {
   .bb-content-area;
   .bb-chat-messages {
     .bb-tiny-chat-messages;
   }
-}
-.compactHeader .bb-chat-messages {
-  padding-top: 20px;
 }
 .bb-chat-messages {
   @chat-arrow-size: 6px;
@@ -95,7 +92,7 @@
   } 
   &.can-modify-star {
     .bb-message-star::after {
-      color: black;
+      color: var(--text-color);
     }
     .starred .bb-message-star::before {
       color: gold;
@@ -129,21 +126,32 @@
   }
   .bb-message-body {
     min-height: @gravatar-size; /* match gravatar height */
-    background-color: white;
+    background-color: var(--bg-color);
     box-sizing: border-box;
     padding: 2px 5px;
     border: 1px solid #ccc;
     -webkit-border-radius: 5px;
        -moz-border-radius: 5px;
             border-radius: 5px;
-    .media-heading { margin-bottom: 0; color: #666; }
+    .media-heading {
+      margin-bottom: 0;
+      color: #666;
+      
+      .darkMode & {
+        color: #999;
+      }
+    }
   }
   .bb-message-pm {
-    @bb-message-pm-color: rgb(232,237,255);
-    .bb-message-body {
-      background-color: @bb-message-pm-color;
+    --bb-message-pm-color: rgb(232, 237, 255);
+    
+    .darkMode & {
+      --bb-message-pm-color: rgb(40, 60, 78);
     }
-    &.media:after { border-right-color: @bb-message-pm-color; }
+    .bb-message-body {
+      background-color: var(--bb-message-pm-color);
+    }
+    &.media:after { border-right-color: var(--bb-message-pm-color); }
   }
   .bb-message-presence {
     display: inline-block;
@@ -179,6 +187,11 @@
   .bb-message-action {
     font-weight: bold; background: #eee; color: #444;
     padding: 2px 0;
+    
+    .darkMode & {
+      background: #444;
+      color: #eee;
+    }
   }
   .bb-message-action, .bb-message-system {
     padding-left: 80px;
@@ -187,12 +200,17 @@
   .bb-message-body, .bb-message-action, .bb-message-system {
     .timestamp {
       color: #ccc;
+      
       padding-right: 5px;
     }
   }
   .bb-message-last-read {
-    color: #33f;
-    border-bottom: 2px solid #66f;
+    color: #960;
+    border-bottom: 2px solid #960;
+    .darkMode & {
+      color: #fd9;
+      border-bottom: 2px solid #fd9;
+    }
     font-size: 8px;
     line-height: 8px;
     margin-top: -8px;
@@ -238,7 +256,7 @@ table.poll {
 }
 .glyphicon-white {
   .glyphicon;
-  color: white;
+  color: var(--bg-color);
 }
 .bb-message-body, .bb-chat-presence, .bb-puzzle {
   .near {
@@ -283,7 +301,7 @@ table.poll {
   body {
     padding-left: 0px;
     padding-right: 0px;
-    background: white;
+    background: var(--bg-color);
   }
   .navbar-fixed-top, .navbar-fixed-bottom {
     margin-left: 0px;
@@ -345,4 +363,7 @@ table.poll {
 
 .highlight-nick {
   color: #0000ff;
+  .darkMode & {
+    color: #99f;
+  }
 }

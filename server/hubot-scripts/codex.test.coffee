@@ -24,7 +24,7 @@ describe 'codex hubot script', ->
       toFake: ["Date"]
     # can't use plain hubot because this script uses priv, which isn't part of
     # the standard message class or adapter.
-    robot = new Robot 'testbot'
+    robot = new Robot 'testbot', 'testbot@testbot.test'
     share.hubot.codex robot
     robot.run()
     clock.tick 1
@@ -662,6 +662,28 @@ describe 'codex hubot script', ->
       await waitForDocument model.Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
       chai.assert.deepInclude model.Puzzles.findOne(mid), puzzles: []
 
+    it 'fails when one exists by that name', ->
+      mid = model.Puzzles.insert
+        name: 'Even This Poem'
+        canon: 'even_this_poem'
+        feedsInto: []
+        puzzles: []
+      rid = model.Rounds.insert
+        name: 'Elliptic Curve'
+        canon: 'elliptic_curve'
+        puzzles: [mid]
+      model.Messages.insert
+        nick: 'torgen'
+        room_name: 'general/0'
+        timestamp: Date.now()
+        body: 'bot Even this poem is a new puzzle in elliptic curve'
+      await waitForDocument model.Messages, {body: $regex: /torgen: There's already.*a puzzle named Even This Poem/},
+        nick: 'testbot'
+        timestamp: 7
+        room_name: 'general/0'
+        useful: true
+      chai.assert.deepInclude model.Rounds.findOne(rid), puzzles: [mid]
+
     it 'creates in this round', ->
       mid = model.Puzzles.insert
         name: 'Even This Poem'
@@ -827,6 +849,22 @@ describe 'codex hubot script', ->
         puzzles: []
         sort_key: 7
         link: 'https://moliday.holasses/circular'
+
+    it 'fails when one exists by that name', ->
+      rid = model.Rounds.insert
+        name: 'Elliptic Curve'
+        canon: 'elliptic_curve'
+        puzzles: []
+      model.Messages.insert
+        nick: 'torgen'
+        room_name: 'general/0'
+        timestamp: Date.now()
+        body: 'bot elliptic curve is a new round'
+      await waitForDocument model.Messages, {body: $regex: /torgen: There's already.*a round named Elliptic Curve/},
+        nick: 'testbot'
+        timestamp: 7
+        room_name: 'general/0'
+        useful: true
 
   describe 'deleteRound', ->
     it 'deletes empty round', ->
@@ -1080,6 +1118,204 @@ describe 'codex hubot script', ->
             touched_by: 'torgen'
             touched: 7
             value: 'blue'
+  
+  describe 'deleteTag', ->
+    describe 'in puzzle room', ->
+      it 'infers puzzle', ->
+        model.Puzzles.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'puzzles/12345abcde'
+          timestamp: Date.now()
+          body: 'bot unset Color'
+        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+
+      it 'allows specifying puzzle', ->
+        model.Puzzles.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags:
+            color:
+              value: 'blue'
+        model.Puzzles.insert
+          _id: 'fghij67890'
+          name: 'Even This Poem'
+          canon: 'even_this_poem'
+          tags: {}
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'puzzles/fghij67890'
+          timestamp: Date.now()
+          body: 'bot unset Color for latino alphabet'
+        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+
+      it 'allows specifying round', ->
+        model.Puzzles.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags: {}
+        model.Rounds.insert
+          _id: 'fghij67890'
+          name: 'Elliptic Curve'
+          canon: 'elliptic_curve'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'puzzles/12345abcde'
+          timestamp: Date.now()
+          body: 'bot unset Color for elliptic curve'
+        waitForDocument model.Rounds, {_id: 'fghij67890', 'tags.color': $exists: false }, {}
+
+      it 'complains if not set ', ->
+        model.Puzzles.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags: {}
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'puzzles/12345abcde'
+          timestamp: Date.now()
+          body: 'bot unset Color'
+        waitForDocument model.Messages, {body: 'torgen: Latino Alphabet didn\'t have Color set!'},
+          nick: 'testbot'
+          room_name: 'puzzles/12345abcde'
+          timestamp: 7
+            
+    describe 'in round room', ->
+      it 'infers round', ->
+        model.Rounds.insert
+          _id: 'fghij67890'
+          name: 'Elliptic Curve'
+          canon: 'elliptic_curve'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'rounds/fghij67890'
+          timestamp: Date.now()
+          body: 'bot unset Color'
+        waitForDocument model.Rounds, {_id: 'fghij67890', 'tags.color': $exists: false }, {}
+            
+      it 'allows specifying puzzle', ->
+        model.Rounds.insert
+          _id: 'fghij67890'
+          name: 'Elliptic Curve'
+          canon: 'elliptic_curve'
+          tags: {}
+        model.Puzzles.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'rounds/fghij67890'
+          timestamp: Date.now()
+          body: 'bot unset Color for latino alphabet'
+        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+
+      it 'allows specifying round', ->
+        model.Rounds.insert
+          _id: 'fghij67890'
+          name: 'Elliptic Curve'
+          canon: 'elliptic_curve'
+          tags: {}
+        model.Rounds.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'rounds/fghij67890'
+          timestamp: Date.now()
+          body: 'bot unset Color of latino alphabet'
+        waitForDocument model.Rounds, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+      
+      it 'complains if not set ', ->
+        model.Rounds.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags: {}
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'rounds/12345abcde'
+          timestamp: Date.now()
+          body: 'bot unset Color'
+        waitForDocument model.Messages, {body: 'torgen: Latino Alphabet didn\'t have Color set!'},
+          nick: 'testbot'
+          room_name: 'rounds/12345abcde'
+          timestamp: 7
+
+    describe 'in general room', ->
+      it 'fails when target is not specified', ->
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'general/0'
+          timestamp: Date.now()
+          body: 'bot unset Color'
+        waitForDocument model.Messages, {body: 'torgen: You need to tell me which puzzle this is for.'},
+          nick: 'testbot'
+          room_name: 'general/0'
+          timestamp: 7
+
+      it 'fails when target does not exist', ->
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'general/0'
+          timestamp: Date.now()
+          body: 'bot unset Color for latino alphabet'
+        waitForDocument model.Messages, {body: 'torgen: I can\'t find anything called "latino alphabet".'},
+          nick: 'testbot'
+          room_name: 'general/0'
+          timestamp: 7
+
+      it 'allows specifying puzzle', ->
+        model.Puzzles.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'general/0'
+          timestamp: Date.now()
+          body: 'bot unset Color for latino alphabet'
+        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+
+      it 'allows specifying round', ->
+        model.Rounds.insert
+          _id: '12345abcde'
+          name: 'Latino Alphabet'
+          canon: 'latino_alphabet'
+          tags:
+            color:
+              value: 'blue'
+        model.Messages.insert
+          nick: 'torgen'
+          room_name: 'general/0'
+          timestamp: Date.now()
+          body: 'bot unset Color for latino alphabet'
+        waitForDocument model.Rounds, {_id: '12345abcde', 'tags.color': $exists: false }, {}
 
   describe 'stuck', ->
     describe 'in puzzle room', ->

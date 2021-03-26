@@ -1,6 +1,6 @@
 'use strict'
 
-import { nickEmail } from './imports/nickEmail.coffee'
+import { nickHash } from './imports/nickEmail.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 import * as callin_types from '/lib/imports/callin_types.coffee'
 
@@ -56,10 +56,6 @@ Template.callins.helpers
 
 Template.callins.onRendered ->
   $("title").text("Answer queue")
-  this.clipboard = new Clipboard '.copy-and-go'
-
-Template.callins.onDestroyed ->
-  this.clipboard.destroy()
 
 Template.callins.events
   "click .bb-addquip-btn": (event, template) ->
@@ -92,7 +88,6 @@ Template.callin_row.helpers
       fields: {}
     )?
   callinTypeIs: (type) -> @callin_type is type
-  nickEmail: -> nickEmail @
 
 Template.callin_row.events
   "change .bb-submitted-to-hq": (event, template) ->
@@ -104,10 +99,11 @@ Template.callin_row.events
         submitted_to_hq: checked
         submitted_by: if checked then Meteor.userId() else null
 
+Template.callin_copy_and_go.events
   "click .copy-and-go": (event, template) ->
     Meteor.call 'setField',
       type: 'callins'
-      object: @_id
+      object: @callin._id
       fields:
         submitted_to_hq: true
         submitted_by: Meteor.userId()

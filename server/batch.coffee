@@ -2,6 +2,7 @@
 return unless share.DO_BATCH_PROCESSING
 
 import canonical from '../lib/imports/canonical.coffee'
+import md5 from '/lib/imports/md5.coffee'
 import { canonicalTags, getTag } from '../lib/imports/tags.coffee'
 import watchPresence from './imports/presence.coffee'
 
@@ -10,16 +11,6 @@ model = share.model
 # Does various fixups of the collections.
 # Was in lib/model.coffee, but that meant it was loaded on the client even
 # though it could never run there.
-
-model.CallIns.update
-  status: null
-,
-  $set: status: 'pending'
-,
-  multi: true
-try
-  Promise.await model.CallIns.rawCollection().dropIndex('target_1_answer_1')
-# No problem if it doesn't exist.
 
 # helper function: like _.throttle, but always ensures `wait` of idle time
 # between invocations.  This ensures that we stay chill even if a single

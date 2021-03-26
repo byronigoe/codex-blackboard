@@ -1,6 +1,7 @@
 .bb-favorite-button {
   position: relative;
   display: inline-block;
+  cursor: pointer;
   &::before, &::after {
     font-family: "Font Awesome 5 Free";
     content: "\f004";
@@ -8,11 +9,17 @@
   &::before { font-weight: 900; }
   &::after {
     font-weight: 400;
-    color: black; 
+    color: var(--text-color); 
     position: absolute;
     bottom: 0px;
     left:0px;
   }
   &.indifferent::before { color: transparent; }
-  &.favorite::before { color: red; }
+  &.favorite::before {
+    color: red;
+    .darkMode & {
+      color: fuchsia;
+    }
+  }
+
 }

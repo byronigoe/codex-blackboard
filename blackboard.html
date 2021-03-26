@@ -8,6 +8,9 @@
   <ul class="nav nav-list bb-sidenav">
     <li><a class="callins-link" href="/callins"><i class="fas fa-phone"></i> Callin Queue</a></li>
     <li><a href="https://www.github.com/{{whoseGitHub}}/codex-blackboard/issues" target="_blank"><i class="fab fa-github"></i> Issues</a></li>
+    {{#with driveFolder}}
+      <li><a href="{{drive_link this}}" target="_blank"><i class="fab fa-google-drive"></i> Google Drive Folder</a></li>
+    {{/with}}
     <li class="separator"></li>
     {{#if favorites.count}}
       <li><a href="#favorites"><i class="fas fa-chevron-right"></i>Favorites</a></li>
@@ -22,6 +25,11 @@
     <li><a href="#unassigned{{_id}}"><i class="fas fa-chevron-right"></i>Unassigned</a></li>
     {{/if}}
     {{/each}}
+    <li class="fill"></li>
+    {{#if hasJitsiLocalStorage}}
+      <li class="nav-header">Troubleshooting</li>
+      <li><a href="#" class="bb-clear-jitsi-storage" title="Jitsi can sometimes store so much data in local storage that when it tries to pass it to the iframe, it exceeds the browser's URL size limit. Click here to clear that storage.">Clear Jitsi Local Storage</a></li>
+    {{/if}}
   </ul>
 </div>
 <!-- puzzles w/ index -->
@@ -53,7 +61,7 @@
             </button>
             <ul class="dropdown-menu pull-left bb-notification-controls">
               {{#each notificationStreams}}
-                <li><a href="#"><label for="bb-notification-{{name}}">
+                <li><a name="bb-notification-{{name}}"><label class="checkbox">
                   <input type="checkbox" id="bb-notification-{{name}}"
                         data-notification-stream="{{name}}"
                         checked="{{notificationStreamEnabled name}}">
@@ -98,7 +106,7 @@
           {{#unless canEdit}}
           <th class="puzzle-working">Working on this
             <span class="button-group">
-              <a name="bb-show-filter-by-user" title="Filter puzzles by solver" class="dropdown-toggle bb-show-filter-by-user" data-toggle="dropdown"><i class="fas fa-search"></i></a>
+              <a href="#" name="bb-show-filter-by-user" title="Filter puzzles by solver" class="dropdown-toggle bb-show-filter-by-user" data-toggle="dropdown"><i class="fas fa-search"></i></a>
               <ul class="bb-filter-by-user-dropdown dropdown-menu">
                 <li class="form-search">
                   <div class="input-append">
@@ -155,8 +163,8 @@
 </template>
 
 <template name="blackboard_round">
-  {{#let m=metas u=unassigned}}
-    {{#if any m.length u.length canEdit (not hideSolvedMeta)}}
+  {{#if showRound}}
+    {{#let m=metas u=unassigned}}
       <tbody>
       <tr><th colspan="{{nCols}}" id="round{{_id}}">
         <h2 class="bb-editable" data-bbedit="rounds/{{_id}}/title">
@@ -214,8 +222,8 @@
       {{#with u}}
         {{> blackboard_unassigned }}
       {{/with}}
-    {{/if}}
-  {{/let}}
+    {{/let}}
+  {{/if}}
 </template>
 
 <template name="blackboard_unassigned">
@@ -501,7 +509,7 @@
 
 <template name="nick_presence">
 <span class="nick {{#unless foreground}}background{{/unless}} {{#if nickNear nick}}near{{/if}}"
-      title="{{nickOrName nick}}{{nickLocation nick}}">{{gravatar id=email size=14 }}</span>
+      title="{{nickOrName nick}}{{nickLocation nick}}">{{> gravatar nick=nick size=14 }}</span>
 </template>
 
 <template name="blackboard_puzzle">

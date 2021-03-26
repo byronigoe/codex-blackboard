@@ -1,5 +1,6 @@
 'use strict'
 model = share.model # import
+import canonical from '/lib/imports/canonical.coffee'
 import { Settings } from '/lib/imports/settings.coffee'
 
 puzzleQuery = (query) -> 
@@ -155,6 +156,7 @@ Meteor.publish 'recent-header-messages', loginRequired ->
     system: $ne: true
     bodyIsHtml: $ne: true
     deleted: $ne: true
+    header_ignore: $ne: true
     $or: [ {to: null}, {to: @userId}, {nick: @userId }]
   ,
     sort: [['timestamp', 'desc']]
@@ -187,14 +189,14 @@ Meteor.publish 'all-names', loginRequired ->
         self.added 'names', doc._id,
           type: type
           name: doc.name
-          canon: model.canonical(doc.name)
+          canon: canonical doc.name
       removed: (doc) ->
         self.removed 'names', doc._id
       changed: (doc,olddoc) ->
         return unless doc.name isnt olddoc.name
         self.changed 'names', doc._id,
           name: doc.name
-          canon: model.canonical(doc.name)
+          canon: canonical doc.name
   # observe only returns after initial added callbacks have run.  So now
   # mark the subscription as ready
   self.ready()

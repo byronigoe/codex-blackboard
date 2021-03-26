@@ -14,8 +14,10 @@ describe 'graph', ->
 
   it 'renders', ->
     share.Router.GraphPage()
+    await afterFlushPromise()
+    p = new Promise (resolve) ->
+      $('.bb-status-graph').one('render', resolve)
     await waitForSubscriptions()
     await afterFlushPromise()
-    await new Promise (resolve) ->
-      $('.bb-status-graph').one('render', resolve)
+    await p
     chai.assert.isAtLeast $('.bb-status-graph canvas').length, 1

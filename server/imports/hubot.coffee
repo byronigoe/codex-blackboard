@@ -1,6 +1,7 @@
 'use strict'
 
 import canonical from '../../lib/imports/canonical.coffee'
+import md5 from '/lib/imports/md5.coffee'
 import { callAs } from './impersonate.coffee'
 import Hubot from 'hubot/es2015'
 
@@ -104,7 +105,7 @@ class BlackboardAdapter extends Hubot.Adapter
     Meteor.users.upsert @botname,
       $set:
         nickname: @robot.name
-        gravatar: @gravatar
+        gravatar_md5: md5 @gravatar
         bot_wakeup: share.model.UTCNow()
       $unset: services: ''
     # register our presence in general chat
@@ -156,6 +157,7 @@ class BlackboardAdapter extends Hubot.Adapter
       room_name: 'general/0'
       action: true
       bot_ignore: true
+      header_ignore: true
     @emit 'connected'
 
   # Public: Raw method for shutting the bot down.
