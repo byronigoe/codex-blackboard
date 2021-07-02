@@ -368,6 +368,7 @@ Template.blackboard_round.helpers
       }
     r.reverse() if 'true' is reactiveLocalStorage.getItem 'sortReverse'
     return r
+  collapsed: -> 'true' is reactiveLocalStorage.getItem "collapsed_round.#{@_id}"
   unassigned: unassigned_helper
   showRound: ->
     return true if Session.get('editing')?
@@ -386,6 +387,10 @@ Template.blackboard_round.events
   'click .bb-round-buttons .bb-move-up': (event, template) ->
     dir = if 'true' is reactiveLocalStorage.getItem 'sortReverse' then 1 else -1
     Meteor.call 'moveRound', template.data._id, dir
+  'click .bb-round-header.collapsed .collapse-toggle': (event, template) ->
+    reactiveLocalStorage.setItem "collapsed_round.#{template.data._id}", false
+  'click .bb-round-header:not(.collapsed) .collapse-toggle': (event, template) ->
+    reactiveLocalStorage.setItem "collapsed_round.#{template.data._id}", true
 
 moveBeforePrevious = (match, rel, event, template) ->
   row = template.$(event.target).closest(match)
@@ -478,6 +483,10 @@ Template.blackboard_meta.events
         feedsInto: [puzzId]
         round: roundId,
       (error,r)-> throw error if error
+  'click tr.meta.collapsed .collapse-toggle': (event, template) ->
+    reactiveLocalStorage.setItem "collapsed_meta.#{template.data.puzzle._id}", false
+  'click tr.meta:not(.collapsed) .collapse-toggle': (event, template) ->
+    reactiveLocalStorage.setItem "collapsed_meta.#{template.data.puzzle._id}", true
 
 Template.blackboard_meta.helpers
   color: -> puzzleColor @puzzle if @puzzle?
@@ -505,6 +514,7 @@ Template.blackboard_meta.helpers
       x = model.Puzzles.findOne id
       continue unless x?.solved?
     y.length
+  collapsed: -> 'true' is reactiveLocalStorage.getItem "collapsed_meta.#{@puzzle._id}"
 
 
 Template.blackboard_puzzle_cells.events
