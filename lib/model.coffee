@@ -246,7 +246,7 @@ if Meteor.isServer
 #     timestamp: The time of the last keepalive for this connection
 Presence = BBCollection.presence = new Mongo.Collection 'scoped_presence'
 if Meteor.isServer
-  Presence._ensureIndex {room_name:1, nick: 1, scope: 1}, {unique:true, dropDups:true}
+  Presence._ensureIndex {scope: 1, room_name:1, nick: 1}, {unique:true, dropDups:true}
   Presence._ensureIndex {"clients.timestamp": 1}, {}
 
 # this reverses the name given to Mongo.Collection; that is the
