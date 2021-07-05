@@ -219,7 +219,7 @@
       </th></tr></tbody>
       {{#if any canEdit (not collapsed)}}
         {{#each m}}
-          {{> blackboard_meta }}
+          {{> blackboard_meta _id=_id puzzle=puzzle reorderable=true}}
         {{/each}}
         {{#with u}}
           {{> blackboard_unassigned }}
@@ -309,8 +309,10 @@
         <i class="fas fa-tags"></i>
         <i class="fas fa-plus"></i>
       </button>
-      <button class="btn btn-link bb-move-down"><i class="fas fa-arrow-down"></i></button>
-      <button class="btn btn-link bb-move-up"><i class="fas fa-arrow-up"></i></button>
+      {{#if reorderable}}
+        <button class="btn btn-link bb-move-down"><i class="fas fa-arrow-down"></i></button>
+        <button class="btn btn-link bb-move-up"><i class="fas fa-arrow-up"></i></button>
+      {{/if}}
       </div>
     {{/if}}
     {{#with puzzle}}
@@ -502,7 +504,7 @@
     </tr>
     {{#if any canEdit (not collapsed)}}
       {{#each p in puzzles}}
-        {{> blackboard_puzzle _id=p._id puzzle=p.puzzle draggable=(not puzzle.order_by)}}
+        {{> blackboard_puzzle _id=p._id puzzle=p.puzzle reorderable=(not puzzle.order_by)}}
       {{else unless num_puzzles}}
         <tr class="round-empty"><td colspan="{{nCols}}">No puzzles feed this meta yet.</td></tr>
       {{/each}}
@@ -533,7 +535,7 @@
 </template>
 
 <template name="blackboard_puzzle">
-  <tr class="puzzle {{#if stuck puzzle}}bb-status-stuck{{/if}}" draggable="{{all canEdit draggable}}" data-puzzle-id="{{puzzle._id}}">
+  <tr class="puzzle {{#if stuck puzzle}}bb-status-stuck{{/if}}" draggable="{{all canEdit reorderable}}" data-puzzle-id="{{puzzle._id}}">
     {{> blackboard_puzzle_cells}}
  </tr>
 </template>
