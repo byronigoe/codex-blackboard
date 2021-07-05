@@ -1175,7 +1175,7 @@ do ->
       now = UTCNow()
       # Accumulate solver time for currrent presence
       solverTime = 0
-      Presence.find({present: true, room_name: "puzzles/#{id}", bot: $ne: true}).forEach (present) ->
+      Presence.find({scope: 'chat', room_name: "puzzles/#{id}", bot: $ne: true}).forEach (present) ->
         since = now - present.timestamp
         if since < (PRESENCE_KEEPALIVE_MINUTES*60+10)*1000
           # If it's been less than one keepalive interval, plus some skew, since you checked in, assume you're still here

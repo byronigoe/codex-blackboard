@@ -44,18 +44,18 @@ describe 'setAnswer', ->
         room_name: "puzzles/#{id}"
         nick: 'torgen'
         timestamp: 2
-        present: true
+        scope: 'chat'
       model.Presence.insert
         room_name: "puzzles/#{id}"
         nick: 'botto'
         timestamp: 0
         bot: true
-        present: true
+        scope: 'chat'
       model.Presence.insert
         room_name: "puzzles/#{id}"
         nick: 'idle'
         timestamp: -130001
-        present: true
+        scope: 'chat'
     it 'fails without login', ->
       chai.assert.throws ->
         Meteor.call 'setAnswer',
@@ -185,12 +185,12 @@ describe 'setAnswer', ->
         nick: 'botto'
         timestamp: 0
         bot: true
-        present: true
+        scope: 'chat'
       model.Presence.insert
         room_name: "puzzles/#{id}"
         nick: 'idle'
         timestamp: -130001
-        present: true
+        scope: 'chat'
       ret = callAs 'setAnswer', 'cjb',
         target: id
         answer: 'bar'
