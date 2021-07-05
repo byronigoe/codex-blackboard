@@ -2,6 +2,9 @@
 model = share.model # import
 import canonical from '/lib/imports/canonical.coffee'
 import { Settings } from '/lib/imports/settings.coffee'
+import { NonEmptyString } from '/lib/imports/match.coffee'
+
+DEBUG = !Meteor.isProduction
 
 puzzleQuery = (query) -> 
   model.Puzzles.find query,
@@ -39,8 +42,6 @@ Meteor.publish = ((publish) ->
     publish.call(Meteor, name, func2)
 )(Meteor.publish) if false # disable by default
 
-
-
 Meteor.publish 'all-roundsandpuzzles', loginRequired -> [
   model.Rounds.find(), @puzzleQuery({})
 ]
@@ -66,17 +67,49 @@ Meteor.publish null, loginRequired ->
     priv_located_order: 0
 
 Meteor.publish 'all-presence', loginRequired ->
-  # strip out unnecessary fields from presence (esp timestamp) to avoid wasted
-  # updates to clients
-  model.Presence.find {present: true}, fields:
+  # strip out unnecessary fields from presence to avoid wasted updates to clients
+  model.Presence.find {}, fields:
     timestamp: 0
-    foreground_uuid: 0
-    present: 0
+    clients: 0
 Meteor.publish 'presence-for-room', loginRequired (room_name) ->
-  model.Presence.find {present: true, room_name: room_name}, fields:
+  model.Presence.find {room_name, scope: 'chat'}, fields:
     timestamp: 0
-    foreground_uuid: 0
-    present: 0
+    clients: 0
+
+Meteor.publish 'register-presence', loginRequired (room_name, scope) ->
+  check room_name, NonEmptyString
+  check scope, NonEmptyString
+  subscription_id = Random.id()
+  console.log "#{@userId} subscribing to #{scope}:#{room_name} at #{model.UTCNow()}, id #{@connection.id}:#{subscription_id}" if DEBUG
+  keepalive = =>
+    now = model.UTCNow()
+    model.Presence.upsert {nick: @userId, room_name, scope},
+      $setOnInsert:
+        joined_timestamp: now
+      $max: timestamp: now
+      $push: clients:
+        connection_id: @connection.id
+        subscription_id: subscription_id
+        timestamp: now
+    model.Presence.update {nick: @userId, room_name, scope},
+      $pull: clients:
+        connection_id: @connection.id
+        subscription_id: subscription_id
+        timestamp: $lt: now
+  keepalive()
+  interval = Meteor.setInterval keepalive, (model.PRESENCE_KEEPALIVE_MINUTES*60*1000)
+  @onStop =>
+    console.log "#{@userId} unsubscribing from #{scope}:#{room_name}, id #{@connection.id}:#{subscription_id}" if DEBUG
+    Meteor.clearInterval interval
+    now = model.UTCNow()
+    Meteor.setTimeout =>
+      model.Presence.update {nick: @userId, room_name, scope},
+        $max: timestamp: now
+        $pull: clients:
+          connection_id: @connection.id
+          subscription_id: subscription_id
+    , 2000
+  @ready()
 
 Meteor.publish 'settings', loginRequired -> Settings.find()
 
