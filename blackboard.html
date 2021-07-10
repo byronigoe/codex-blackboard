@@ -239,7 +239,7 @@
     <tbody class="unassigned" id="unassigned{{../_id}}">
     <tr><th colspan="{{nCols}}">Unassigned</th></tr>
     {{#each this}}
-      {{> blackboard_puzzle}}
+      {{> blackboard_puzzle puzzle=puzzle reorderable=true }}
     {{/each}}
     </tbody>
   {{/if}}
