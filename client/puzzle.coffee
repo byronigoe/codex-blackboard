@@ -125,6 +125,7 @@ Template.puzzle.onCreated ->
     @subscribe 'round-for-puzzle', id
     @subscribe 'puzzles-by-meta', id
   @autorun =>
+    return unless Session.equals 'type', 'puzzles'
     if currentViewIs model.Puzzles.findOne(Session.get('id')), 'info'
       Session.set 'topRight', null
     else
