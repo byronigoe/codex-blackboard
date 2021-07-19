@@ -66,6 +66,23 @@ Meteor.publish null, loginRequired ->
     services: 0
     priv_located_order: 0
 
+# Private messages to you
+Meteor.publish null, loginRequired -> model.Messages.find {to: @userId, deleted: $ne: true}
+
+# Your presence in all rooms, with _id changed to room_name.
+Meteor.publish null, loginRequired ->
+  idToRoom = new Map
+  handle = model.LastRead.find({nick: @userId}).observeChanges
+    added: (id, fields) =>
+      idToRoom.set id, fields.room_name
+      @added 'lastread', fields.room_name, fields
+    changed: (id, {timestamp}) =>
+      return unless timestamp?
+      # There's no way to change the room name or nick of an existing lastread entry.
+      @changed 'lastread', idToRoom.get(id), {timestamp}
+  @onStop -> handle.stop()
+  @ready()
+
 Meteor.publish 'all-presence', loginRequired ->
   # strip out unnecessary fields from presence to avoid wasted updates to clients
   model.Presence.find {}, fields:
@@ -112,8 +129,6 @@ Meteor.publish 'register-presence', loginRequired (room_name, scope) ->
   @ready()
 
 Meteor.publish 'settings', loginRequired -> Settings.find()
-
-Meteor.publish 'lastread', loginRequired (room_name) -> model.LastRead.find {nick: @userId, room_name}
 
 Meteor.publish 'last-puzzle-room-message', loginRequired (puzzle_id) ->
   check puzzle_id, NonEmptyString
@@ -215,7 +230,8 @@ Meteor.publish 'recent-header-messages', loginRequired ->
     bodyIsHtml: $ne: true
     deleted: $ne: true
     header_ignore: $ne: true
-    $or: [ {room_name: 'general/0', to: null}, {to: @userId}, {room_name: 'general/0', nick: @userId }]
+    room_name: 'general/0'
+    $or: [ {to: null},  {nick: @userId }]
   ,
     sort: [['timestamp', 'desc']]
     limit: 2

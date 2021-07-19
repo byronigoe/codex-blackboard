@@ -231,10 +231,10 @@ if Meteor.isServer
 #   nick: canonicalized string, as in Messages
 #   room_name: string, as in Messages
 #   timestamp: timestamp of last read message
+# On the client, _id is room_name.
 LastRead = BBCollection.lastread = new Mongo.Collection "lastread"
 if Meteor.isServer
   LastRead._ensureIndex {nick:1, room_name:1}, {unique:true, dropDups:true}
-  LastRead._ensureIndex {nick:1}, {} # be safe
 
 # Chat room presence
 #   nick: canonicalized string, as in Messages
@@ -964,11 +964,12 @@ do ->
       check args, ObjectWith
         room_name: NonEmptyString
         timestamp: Number
-      LastRead.upsert
+      query = 
         nick: @userId
         room_name: args.room_name
-      , $max:
-        timestamp: args.timestamp
+      if @isSimulation
+        query._id = args.room_name
+      LastRead.upsert query, $max: timestamp: args.timestamp
 
     get: (type, id) ->
       check @userId, NonEmptyString
