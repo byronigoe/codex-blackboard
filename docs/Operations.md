@@ -68,7 +68,7 @@ resources.
     * It will ask for a hostname. Give it the one you created the A record for in step 5.
     * It will open some config files and give you a chance to edit them. The config files are .env files as used by systemd. These files can use both `#` and `;` to denote comments. In my usage, `#` is used for explanatory comments and `;` is used for settings which are not set, typically because they are optional and their correct values can't be determined automatically. If you set one of these, you must remove the leading `;` or your change will have no effect. The possible settings are well documented; the
       most important are:
-      * `DRIVE_OWNER_ACCOUNT`: If you want all documents and folders the blackboard creates to be shared with you, set this to the email address to share them with.
+      * `DRIVE_OWNER_ADDRESS`: If you want all documents and folders the blackboard creates to be shared with you, set this to the email address to share them with.
       * `TEAM_PASSWORD`: The shared password all users will use to login. If you don't set it, any password will be accepted.
       * `DRIVE_FOLDER_NAME`: The name of the top-level drive folder. If you use the blackboard for multiple hunts, you
         want this set to a different value for each so puzzles with coincidentally the same name don't use the same
