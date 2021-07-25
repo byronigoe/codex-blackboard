@@ -45,8 +45,11 @@ CREATING THE APP
    well on the Galaxy free tier because your app will shut down when not in use.
 5. Create your app: `meteor deploy --free --mongo <something>.meteorapp.com --settings <path to settings file>`
 6. Disable default email notifications for application events. Go to your app's dashboard at
-   `https://galaxy.meteor.com/app/<something>.meteorapp.com`, click the settings tab, and under Notifications, choose
-   "Enable custom app notifications". Email Notifications should be disabled by default. Save the setting changes.
+   `https://galaxy.meteor.com/app/<something>.meteorapp.com` (the meteor command will print the URL), click the
+   settings tab, and under Notifications, choose "Enable custom app notifications". Email Notifications should be
+   disabled by default. Save the setting changes.
+7. Force your app to use SSL. Still on the settings tab from step 6, under the `Domains & Encryption` section, click on
+   the table entry for your domain, which will expand it. Ensure the `Force SSL` box is checked.
 
 UPDATING YOUR APP
 =================
