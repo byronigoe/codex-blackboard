@@ -257,7 +257,7 @@ share.hubot.codex = (robot) ->
           name: rname
           type: 'rounds'
         round_url = Meteor._relativeToSiteRootUrl "/rounds/#{existing.object._id}"
-        msg.reply {useful: true, bodyIsHtml: true}, "There's already <a class='round-link' href='#{UI._escape round_url}'>a round named #{UI._escape existing.object.name}</a>."
+        msg.reply {useful: true, bodyIsHtml: true}, "There's already <a class='rounds-link' href='#{UI._escape round_url}'>a round named #{UI._escape existing.object.name}</a>."
       else
         console.log error
         msg.reply {useful: true}, "There was an error creating that puzzle."
