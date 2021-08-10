@@ -3,9 +3,10 @@
 model = share.model # import
 
 Template.link.onCreated ->
+  @target = new ReactiveVar null
   @autorun =>
-    @target = model.Names.findOne(Template.currentData().id)
+    @target.set model.Names.findOne(Template.currentData().id)
 
 Template.link.helpers
-  target: -> Template.instance().target
-  text: -> Template.instance().data.text ? Template.instance().target?.name
+  target: -> Template.instance().target.get()
+  text: -> Template.instance().data.text ? Template.instance().target.get()?.name
