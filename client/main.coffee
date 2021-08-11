@@ -243,7 +243,7 @@ Meteor.startup ->
     return unless me?
     arnow = share.model.UTCNow()  # Intentionally not reactive
     share.model.Messages.find(to: me, timestamp: $gt: arnow).observeChanges
-      added: (id, message) ->
+      added: (msgid, message) ->
         [room_name, url] = if message.room_name is 'general/0'
           [settings.GENERAL_ROOM_NAME, Meteor._relativeToSiteRootUrl '/']
         else if message.room_name is 'callins/0'
@@ -264,7 +264,7 @@ Meteor.startup ->
           body = textify body
         share.notification.notify "Private message from #{message.nick} in #{room_name}",
           body: body
-          tag: id
+          tag: msgid
           data: {url}
           icon: gravatar
   
