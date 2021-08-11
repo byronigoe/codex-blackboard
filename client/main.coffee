@@ -249,8 +249,13 @@ Meteor.startup ->
         else if message.room_name is 'callins/0'
           ['Callin Queue', Meteor._relativeToSiteRootUrl '/callins']
         else
-          pid = message.room_name.match(/puzzles\/(.*)/)[1]
-          ["Puzzle \"#{share.model.Puzzles.findOne(pid).name}\"", share.Router.urlFor 'puzzles', pid]
+          [type, id] = message.room_name.split '/'
+          target = share.model.Names.findOne id
+          if target.type is type
+            pretty_type = share.model.pretty_collection(type).replace /^[a-z]/, (x) -> x.toUpperCase()
+            ["#{pretty_type} \"#{target.name}\"", share.Router.urlFor type, id]
+          else
+            [message.room_name, share.Router.chatUrlFor message.room_name]
         gravatar = gravatarUrl
           gravatar_md5: nickHash(message.nick)
           size: 192
