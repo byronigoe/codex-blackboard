@@ -100,7 +100,7 @@ Click here to stay in this meeting instead.{{/if}}">
 </template>
 
 <template name="media_message">
-  <div class="bb-message media{{#if message.to}} bb-message-pm{{/if}}{{#if message.mail}} bb-message-mail{{/if}}{{#if message.tweet}} bb-message-tweet{{/if}}{{#if message.starred}} starred{{/if}}"
+  <div class="bb-message media {{#if message.to}}bb-message-pm{{else if includes message.mention mynick}}bb-message-mention-me{{/if}}{{#if message.mail}} bb-message-mail{{/if}}{{#if message.tweet}} bb-message-tweet{{/if}}{{#if message.starred}} starred{{/if}}"
        data-nick="{{message.nick}}" data-pm-to="{{message.to}}" data-read="{{#unless read}}un{{/unless}}read">
     {{#if message.tweet}}
       <img src="{{message.tweet.avatar}}" class="media-object pull-left img-rounded" width=48 height=48>
@@ -123,20 +123,22 @@ Click here to stay in this meeting instead.{{/if}}">
           Mail from {{#with message.mail.sender_name}}{{this}}{{else}}{{message.nick}}{{/with}} <i class="fas fa-envelope"></i> {{message.mail.subject}}
         {{else}}
           <span title="{{message.nick}}{{nickLocation message.nick}}" class="{{#if nickNear message.nick}}near{{/if}}">{{nickOrName message.nick}}</span>
-          {{#if message.to}}
-            <small>(Private{{#unless equal message.to currentUser._id}}
-              to {{>gravatar nick=message.to size=12}}{{nickOrName message.to}}{{/unless}}{{#if showRoom}}{{#let splitroom=(split message.room_name "/")}}
-              in {{#if equal splitroom.[0] "general"}}<a href="/" class="home-link">{{generalRoomName}}</a>
-              {{else if equal splitroom.[0] "callins"}}<a href="/callins" class="callins-link">Callin Queue</a>
-              {{else}}{{>link id=splitroom.[1]}}{{/if}} <a href="/chat/{{message.room_name}}" class="chat-link bb-pop-out" target="pmchat" title="Open Chat in new window"><i class="fas fa-comments"></i> <i class="fas fa-external-link-alt"></i></a>{{/let}}{{/if}})</small>
-          {{/if}}
+            {{#if any message.to (includes message.mention mynick)}}
+              <small>({{#if message.to}}Private{{#unless equal message.to currentUser._id}}
+                to {{>gravatar nick=message.to size=12}}{{nickOrName message.to}}{{/unless}}{{else}}Mentioned you{{/if}}{{#if showRoom}}{{#let splitroom=(split message.room_name "/")}}
+                in {{#if equal splitroom.[0] "general"}}<a href="/" class="home-link">{{generalRoomName}}</a>
+                {{else if equal splitroom.[0] "callins"}}<a href="/callins" class="callins-link">Callin Queue</a>
+                {{else}}{{>link id=splitroom.[1]}}{{/if}}{{/let}}<a href="/chat/{{message.room_name}}" class="chat-link bb-pop-out" target="pmchat" title="Open Chat in new window"><i class="fas fa-comments"></i> <i class="fas fa-external-link-alt"></i></a>{{/if}})</small>
+            {{/if}}
         {{/if}}
       </h5>
+      {{#if message.action}}*** {{/if}}
       {{cleanup message.body}}
       {{#if message.tweet.quote}}
         <h6>in reply to @<a href="https://twitter.com/{{message.tweet.quote_nick}}" target="_blank">{{message.tweet.quote_nick}}</a>'s <a href="https://twitter.com/{{message.tweet.quote_nick}}/status/{{message.tweet.quote_id_str}}" target="_blank">tweet</a>:</h6>
         <blockquote>{{cleanup message.tweet.quote}}</blockquote>
-      {{/if}}
+      {{/if}}      
+      {{#if message.action}} ***{{/if}}
       {{#if message.poll}}{{> poll message.poll}}{{/if}}
     </div> 
   </div>  
@@ -189,7 +191,7 @@ Click here to stay in this meeting instead.{{/if}}">
         </div>
       {{else if usefulEnough message}}
         {{#if message.action}}
-          <div class="bb-message-action" data-nick="{{message.nick}}" data-read="{{#unless read}}un{{/unless}}read">
+          <div class="bb-message-action {{#if includes message.mention mynick}}bb-message-mention-me{{/if}}" data-nick="{{message.nick}}" data-read="{{#unless read}}un{{/unless}}read">
             <div class="pull-right timestamp">{{pretty_ts message.timestamp}}</div>
             {{> message_delete_button}}
             {{>gravatar nick=message.nick size=14 }}

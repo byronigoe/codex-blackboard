@@ -26,6 +26,7 @@ Template.registerHelper "equal", (a, b) -> a is b
 Template.registerHelper "less", (a, b) -> a < b
 Template.registerHelper 'any', (a..., options) ->
   a.some (x) -> x
+Template.registerHelper 'includes', (haystack, needle) -> haystack?.includes needle 
 Template.registerHelper 'all', (a..., options) ->
   a.every (x) -> x
 Template.registerHelper 'not', (a) -> not a
@@ -63,7 +64,7 @@ Template.registerHelper 'generalRoomName', -> settings.GENERAL_ROOM_NAME
 
 Template.registerHelper 'namePlaceholder', -> settings.NAME_PLACEHOLDER
 
-Template.registerHelper 'mynick', -> Meteor.user()?.nickname
+Template.registerHelper 'mynick', -> Meteor.userId()
 
 Template.registerHelper 'boringMode', -> 'true' is reactiveLocalStorage.getItem 'boringMode'
 
@@ -242,7 +243,7 @@ Meteor.startup ->
     me = Meteor.user()?._id
     return unless me?
     arnow = share.model.UTCNow()  # Intentionally not reactive
-    share.model.Messages.find(to: me, timestamp: $gt: arnow).observeChanges
+    share.model.Messages.find({$or: [{to: me}, {mention: me}], timestamp: $gt: arnow}).observeChanges
       added: (msgid, message) ->
         [room_name, url] = if message.room_name is 'general/0'
           [settings.GENERAL_ROOM_NAME, Meteor._relativeToSiteRootUrl '/']
@@ -262,7 +263,11 @@ Meteor.startup ->
         body = message.body
         if message.bodyIsHtml
           body = textify body
-        share.notification.notify "Private message from #{message.nick} in #{room_name}",
+        description = if message.to?
+          "Private message from #{message.nick} in #{room_name}"
+        else
+          "Mentioned by #{message.nick} in #{room_name}"
+        share.notification.notify description,
           body: body
           tag: msgid
           data: {url}

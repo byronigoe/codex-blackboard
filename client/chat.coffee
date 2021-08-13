@@ -180,8 +180,6 @@ messageTransform = (m) ->
       body = UI._escape body
       body = body.replace /\n|\r\n?/g, '<br/>'
       body = convertURLsToLinksAndImages body, m._id
-      if doesMentionNick m
-        body = highlightNick body, m.bodyIsHtml
     new Spacebars.SafeString(body)
 
 # Template Binding
@@ -491,29 +489,15 @@ GLOBAL_MENTIONS = /@(channel|everyone)/i
 
 doesMentionNick = (doc, raw_nick=Meteor.userId()) ->
   return false unless raw_nick
-  return false unless doc.body?
-  return false if doc.system # system messages don't count as mentions
-  return true if doc.mail # special alert for team email!
   nick = canonical raw_nick
   return false if nick is doc.nick # messages from yourself don't count
   return true if doc.to is nick # PMs to you count
-  n = Meteor.users.findOne nick
-  realname = n?.real_name
+  return true if doc.mention?.includes nick # Mentions count
+  return false unless doc.body?
+  return false if doc.system # system messages don't count as mentions
   return false if doc.bodyIsHtml # XXX we could fix this
-  # case-insensitive match of canonical nick
-  (new RegExp (regex_escape canonical nick), "i").test(doc.body) or \
-    # case-sensitive match of non-canonicalized nick
-    doc.body.indexOf(raw_nick) >= 0 or \
-    # These things are treated as mentions for everyone
-    GLOBAL_MENTIONS.test(doc.body) or \
-    # match against full name
-    (realname and (new RegExp (regex_escape realname), "i").test(doc.body))
-
-highlightNick = (html, isHtml=false) ->
-  if isHtml
-    "<div class=\"highlight-nick\">" + html + "</div>"
-  else
-    "<span class=\"highlight-nick\">" + html + "</span>"
+  # These things are treated as mentions for everyone
+  GLOBAL_MENTIONS.test(doc.body)
 
 isVisible = share.isVisible = do ->
   _visible = new ReactiveVar()
@@ -763,6 +747,13 @@ Template.messages_input.onCreated ->
           args.body = "tried to /msg an UNKNOWN USER: #{message}"
           args.body = "tried to say nothing: #{message}" if missingMessage
           args.action = true
+    unless args.to?
+      # Can't mention someone in a private message
+      mentions = for match from args.body.matchAll /(^|[\s])@([a-zA-Z_0-9]*)([\s.?!,]|$)/g
+        canon = canonical match[2]
+        continue unless Meteor.users.findOne(canon)?
+        canon
+      args.mention = mentions if mentions.length
     Meteor.call 'newMessage', args # updates LastRead as a side-effect
     # for flicker prevention, we are currently not doing latency-compensation
     # on the newMessage call, which makes the below ineffective.  But leave
