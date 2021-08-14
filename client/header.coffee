@@ -99,7 +99,6 @@ Template.header_loginmute.helpers
     .fetch().filter((msg) -> msg.timestamp > (model.LastRead.findOne(msg.room_name)?.timestamp ? 0)).length
     count unless count is 0
   clamp: (value, limit) ->
-    console.log value, limit
     return unless value
     return "#{limit}+" if value > limit
     value
