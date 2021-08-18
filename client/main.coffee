@@ -320,7 +320,7 @@ BlackboardRouter = Backbone.Router.extend
 
   BlackboardPage: ->
     scrollAfter =>
-      @Page "blackboard", "general", "0", true
+      @Page "blackboard", "general", "0", true, true
       Session.set
         color: 'inherit'
         canEdit: undefined
@@ -329,17 +329,17 @@ BlackboardRouter = Backbone.Router.extend
 
   EditPage: ->
     scrollAfter =>
-      @Page "blackboard", "general", "0", true
+      @Page "blackboard", "general", "0", true, true
       Session.set
         color: 'inherit'
         canEdit: true
         editing: undefined
         topRight: 'blackboard_status_grid'
 
-  GraphPage: -> @Page 'graph', 'general', '0'
+  GraphPage: -> @Page 'graph', 'general', '0', false
 
   PuzzlePage: (id, view=null) ->
-    @Page "puzzle", "puzzles", id, true
+    @Page "puzzle", "puzzles", id, true, true
     Session.set
       timestamp: 0
       view: view
@@ -349,22 +349,22 @@ BlackboardRouter = Backbone.Router.extend
 
   ChatPage: (type,id) ->
     id = "0" if type is "general"
-    this.Page("chat", type, id)
+    this.Page("chat", type, id, true)
 
   OpLogPage: ->
-    this.Page("oplog", "oplog", "0")
+    this.Page("oplog", "oplog", "0", false)
 
   CallInPage: ->
-    @Page "callins", "callins", "0", true
+    @Page "callins", "callins", "0", true, true
     Session.set
       color: 'inherit'
       topRight: null
 
   QuipPage: (id) ->
-    this.Page("quip", "quips", id)
+    this.Page("quip", "quips", id, false)
 
   FactsPage: ->
-    this.Page("facts", "facts", "0")
+    this.Page("facts", "facts", "0", false)
 
   LoadTestPage: (which) ->
     return if Meteor.isProduction
@@ -383,9 +383,9 @@ BlackboardRouter = Backbone.Router.extend
     r = share.loadtest.start which, cb
     cb(r) if r? # immediately navigate if method is synchronous
 
-  Page: (page, type, id, splitter) ->
+  Page: (page, type, id, has_chat, splitter) ->
     old_room = Session.get 'room_name'
-    new_room = "#{type}/#{id}"
+    new_room = if has_chat then "#{type}/#{id}" else null
     if old_room isnt new_room
       # if switching between a puzzle room and full-screen chat, don't reset limit.
       Session.set
