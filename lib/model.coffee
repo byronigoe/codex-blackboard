@@ -289,7 +289,7 @@ do ->
     check x, NonEmptyString
     Object::hasOwnProperty.call(BBCollection, x)
     
-  oplog = (message, type="", id="", who="", stream="") ->
+  oplog = (message, type, id, who, stream='') ->
     Messages.insert
       room_name: 'oplog/0'
       nick: canonical(who)
@@ -359,7 +359,7 @@ do ->
     check args, ObjectWith
       id: NonEmptyString
       who: NonEmptyString
-    name = collection(type)?.findOne(args.id)?.name
+    name = collection(type).findOne(args.id)?.name
     return false unless name
     unless options.suppressLog
       oplog "Deleted "+pretty_collection(type)+" "+name, \
@@ -682,7 +682,7 @@ do ->
           "#{description}, \"#{args.answer.toUpperCase()}\"" + \
           (if opts?.specifyPuzzle then " (#{name})" else "")
       id = args.target._id or args.target
-      newObject "callins", {name:"#{args.callin_type}:#{name}:#{args.answer}", who:@userId},
+      callin = newObject "callins", {name:"#{args.callin_type}:#{name}:#{args.answer}", who:@userId},
         callin_type: args.callin_type
         target: id
         target_type: args.target_type
@@ -714,6 +714,7 @@ do ->
             Meteor.call "newMessage", msg
       oplog "New #{args.callin_type} #{args.answer} submitted for", args.target_type, id, \
           @userId, 'callins'
+      return callin
 
     newQuip: (text) ->
       check @userId, NonEmptyString
@@ -1263,8 +1264,7 @@ do ->
       target = Puzzles.findOne(id)
       throw new Meteor.Error(400, "bad target") unless target
 
-      oplog "reports incorrect answer #{args.answer} for", 'puzzles', id, @userId, \
-          'callins'
+      oplog "reports incorrect answer #{args.answer} for", 'puzzles', id, @userId, 'callins'
       # cancel any matching entries on the call-in queue for this puzzle
       # The 'pending' status means this should be unique if present.
       CallIns.update {target_type: 'puzzles', callin_type: callin_types.ANSWER, target: id, status: 'pending', answer: args.answer},

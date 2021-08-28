@@ -1,8 +1,7 @@
 'use strict'
 
 import canonical from '/lib/imports/canonical.coffee'
-import jitsiUrl from './imports/jitsi.coffee'
-import { nickHash } from './imports/nickEmail.coffee'
+import { jitsiUrl } from './imports/jitsi.coffee'
 import puzzleColor, { cssColorToHex, hexToCssColor } from './imports/objectColor.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 import PuzzleDrag from './imports/puzzle_drag.coffee'
@@ -159,10 +158,6 @@ notificationStreams = [
   {name: 'favorite-mechanics', label: 'Favorite Mechanics'}
   {name: 'private-messages', label: 'Private Messages/Mentions'}
 ]
-
-notificationStreamsEnabled = ->
-  item.name for item in notificationStreams \
-    when share.notification?.get?(item.name)
 
 Template.blackboard.helpers
   notificationStreams: notificationStreams
@@ -347,6 +342,7 @@ Template.blackboard.events
     processBlackboardEdit[type]?(text, id, rest...) if text
 Template.blackboard.events okCancelEvents('.bb-editable input[type=text]',
   ok: (text, evt) ->
+    return if Session.equals 'editing', undefined  # already cancelled.
     # find the data-bbedit specification for this field
     edit = $(evt.currentTarget).closest('*[data-bbedit]').attr('data-bbedit')
     [type, id, rest...] = edit.split('/')
@@ -487,8 +483,8 @@ Template.blackboard_meta.events
       Meteor.call 'newPuzzle',
         name: str
         feedsInto: [puzzId]
-        round: roundId,
-      (error,r)-> throw error if error
+        round: roundId
+      , (error,r)-> throw error if error
   'click tr.meta.collapsed .collapse-toggle': (event, template) ->
     reactiveLocalStorage.setItem "collapsed_meta.#{template.data.puzzle._id}", false
   'click tr.meta:not(.collapsed) .collapse-toggle': (event, template) ->
@@ -514,8 +510,6 @@ Template.blackboard_meta.helpers
     hideSolved = 'true' is reactiveLocalStorage.getItem 'hideSolved'
     return p if editing or !hideSolved
     p.filter (pp) -> !pp.puzzle.solved?
-  tag: (name) ->
-    return (model.getTag this.round, name) or ''
   stuck: share.model.isStuck
   numHidden: ->
     return 0 unless 'true' is reactiveLocalStorage.getItem 'hideSolved'

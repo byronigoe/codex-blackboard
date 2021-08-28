@@ -200,7 +200,7 @@ Meteor.startup ->
   share.model.Messages.find({room_name: 'oplog/0', timestamp: $gt: now.get()}).observe
     added: (msg) ->
       update msg.timestamp
-      return unless Notification?.permission is 'granted'
+      return unless Session.equals 'notifications', 'granted'
       return unless share.notification.get(msg.stream)
       return if suppress
       gravatar = gravatarUrl
