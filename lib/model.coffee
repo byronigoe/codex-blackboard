@@ -87,6 +87,7 @@ if Meteor.isServer
 #   drive: optional google drive folder id
 #   spreadsheet: optional google spreadsheet id
 #   doc: optional google doc id
+#   drive_touched: Time of last change to a file in the drive folder
 #   favorites: object whose keys are userids of users who favorited this
 #              puzzle. Values are true. On the client, either empty or contains
 #              only you.
@@ -117,6 +118,7 @@ if Meteor.isServer
   Puzzles.createIndex {feedsInto: 1}
   Puzzles.createIndex {puzzles: 1}
   Puzzles.createIndex {solved: 1}, {partialFilterExpression: solved: $exists: true}
+  Puzzles.createIndex {drive: 1}
 
 # CallIns are:
 #   _id: mongodb id
@@ -216,6 +218,12 @@ if Meteor.isServer
 #       subscription. Allows rendering only the contiguous messages, without messages
 #       from other subscriptions like personal private messages or starred messages
 #       appearing out of context. (optional, synthetic, client only)
+#   file_upload: embedded document. Present for system messages generated from files
+#                being uploaded to drive folders. Nested keys:
+#     fileId: The Google Drive ID of the file
+#     webViewLink: A URL for viewing the file
+#     name: the name of the file at the time of creation. (It may by changed.)
+#     mimeType: the mime type of the file.
 #
 # Messages which are part of the operation log have `nick`, `message`,
 # and `timestamp` set to describe what was done, when, and by who.
