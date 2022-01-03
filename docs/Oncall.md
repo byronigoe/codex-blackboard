@@ -22,11 +22,21 @@ You can use the calendar for non-puzzle hunt events such as the kickoff, puzzle 
 
 Calling In Answers
 ==================
-The call-in queue is located at the /callins route relative to the blackboard root. There is no direct link there from the
-front page, but the sidebar menu that appears when you click the floating button at the bottom left contains a link to it. Also, if you enable notifications for the 'Callins' stream, clicking a callin notification will take you to the callins page.
+In the past, called-in answers were confirmed by HQ phoning the team, which allowed manual hint-giving and rate-limiting.
+HQ would not repeat the answer on the call (to avoid overhearing spoilers from other teams' calls), so this required the
+team member receiving the call to be aware of the call-ins, so they knew what answer was being confirmed. Recent hunts (and
+non-MIT hunts) use an automatic answer checker which gives instant feedback with automatic rate-limiting. However, it may
+still be a good idea to have an oncall centralize the callins to avoid spamming spurious answers and triggering the
+rate-limiting. Also, since a correct answer often unlocks new puzzles, it makes sense that the oncall be aware that this has
+happened so they know they need to add the knew puzzles.
 
-Depending on the hunt, the phone number to be called back at by HQ may either be a global setting, or entered with each
-call-in. Determine which it is when you go on call, and if necessary enter your phone number in the settings. Also, saying in the chat room on the callins page, "I am on call", and starring it (and unstarring any previous declaration) will ensure everyone know someone is doing the job.
+The call-in queue is located at the `/callins` route relative to the blackboard root. There is no direct link there from the
+front page, but the sidebar menu that appears when you click the floating button at the bottom left contains a link to it.
+Also, if you enable notifications for the 'Callins' stream, clicking a callin notification will take you to the callins page.
+
+Even if answers are confirmed automatically, the hunt may still have a global setting for a phone number to contact the team
+at. If so,  enter your phone number in the settings when you go on call. Also, saying in the chat room on the callins page,
+"I am on call", and starring it (and unstarring any previous declaration) will ensure everyone know someone is doing the job.
 
 A sound will play when a new call-in arrives; you will also get a desktop notification if you enabled them for the 
 "Callins" event type, which is recommended. A button with three icons at the end of the answer will copy it to your
@@ -35,7 +45,8 @@ to submit the answer.
 
 Above the list of pending call-ins are a few of the least recently used quips added by solvers. You should choose a funny
 one to answer the phone with, as entertaining HQ may make them delay our callbacks less if we call in wrong answers. (At
-least, it can't hurt.) If you really don't like one of the quips, you can punt it, which will move it to the bottom of the list without using it.
+least, it can't hurt.) If you really don't like one of the quips, you can punt it, which will move it to the bottom of the
+list without using it.
 
 Each callin has a green button for if the answer was correct and a red one for if it's wrong. Once you get the call back 
 from HQ, click the appropriate one. It will notify the appropriate chat rooms, set the answer on the blackboard, and play
@@ -60,7 +71,8 @@ insensitive and case preserving, and they normalize punctuation and whitespace. 
 you create something, but it doesn't matter when you refer to it later.)
 
 The two types of object are the Puzzle, which is anything with an answer, and the Round, which is a webpage with puzzles
-on it. Metapuzzles are a special case of puzzles, which can have other puzzles feed into them.
+on it. (i.e. Rounds are only for organing the blackboard to match the hunt site.) Metapuzzles are a special case of puzzles,
+which can have other puzzles feed into them.
 
 To add a round using the UI, click the "New Round" button at the top of the table. Using the bot, say: `bot NAME is a new
 round`. 
