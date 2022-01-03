@@ -20,10 +20,11 @@ The main blackboard page and every puzzle page have their own Jitsi meeting.
  
 When you first log into the blackboard, you join the main Jitsi Meeting. (You may need to grant audio/video permissions).
  
-* Changing Meetings (You can only be in one Jitsi Meeting at a time.)
-  * Within a browser tab, the Jitsi meeting moves with you. If you open a new page, you move to that meeting.
-  * To pin yourself to a specific meeting, click the pin icon within that meeting.
-  * To join a specific meeting, click the video icon in the chat line for that page.
+* Changing Meetings
+  * Within a browser tab, the Jitsi meeting moves with you. If you navigate to a new page, you move to that page's meeting.
+  * Only one meeting can be open across all browser tabs. If you open a page in a new tab, its meeting will start closed.
+  * To pin yourself to a specific meeting, click the pin icon within that meeting. Until you unpin the meeting, navigating to new pages within that tab won't change your meeting anymore.
+  * Clicking the "video" button in the chat line in one tab will join the call for the current page and leave the video call in any other tab. The icon will only appear when you're not in the video call in your current tab.
   
 * Audio/Video settings
   * **By default, you enter meetings with your microphone muted and your camera disabled.**
@@ -33,7 +34,7 @@ When you first log into the blackboard, you join the main Jitsi Meeting. (You ma
 * It's broken!
   * Normally the meeting URL for a puzzle is generated automatically from the randomly generated puzzle ID.
   * Sometimes a specific meeting URL will have issues when other meetings are fine, possibly because of issues on the Jitsi server hosting that meeting.
-  * You can force a different meeting URL by (setting the `jitsi` tag)[#tags] on a puzzle.
+  * You can force a different meeting URL by [setting the `jitsi` tag](#tags) on a puzzle.
   * You can also use this to cause multiple puzzles to share one meeting, if that would be useful.
   
 Notifications
@@ -74,7 +75,7 @@ The bot sometimes generates silly messages, e.g. memes.  These can be hidden via
 
 Favorite Puzzles and Mechanics
 ==============================
-A new **Favorite Puzzles Section** displays at the top of your blackboard page if you have any favorite puzzles.
+A **Favorite Puzzles Section** displays at the top of your blackboard page if you have any favorite puzzles.
 <details>
   <summary>Mark a puzzle as a favorite to find it easily later.</summary>
 Every puzzle has a heart icon in both its blackboard grid row and in the info panel on its puzzle page. Clicking the heart adds the puzzle to your personal list of favorites. Clicking it again removes it from your list.
