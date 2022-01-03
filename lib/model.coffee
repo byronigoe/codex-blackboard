@@ -272,6 +272,22 @@ if Meteor.isServer
   Presence.createIndex {scope: 1, room_name:1, nick: 1}, {unique:true, dropDups:true}
   Presence.createIndex {"clients.timestamp": 1}, {}
 
+# Team calendar. Expect this to contain exactly one document
+#   _id: ID of calendar in Google API.
+#   syncToken: token for fetching incremental updates. Server only.
+Calendar = BBCollection.calendar = new Mongo.Collection 'calendar'
+
+# Events from the team calendar.
+#   _id: ID of calendar in Google API
+#   start: start time of event as ms since epoch
+#   end: end time of event as ms since epoch
+#   summary: name of event
+#   location: location of event, which could be a URL
+#   puzzle: optional id of a puzzle the event relates to.
+CalendarEvents = BBCollection.calendar_events = new Mongo.Collection 'calendar_events'
+if Meteor.isServer
+  CalendarEvents.createIndex {puzzle: 1}
+
 # this reverses the name given to Mongo.Collection; that is the
 # 'type' argument is the name of a server-side Mongo collection.
 collection = (type) ->
@@ -573,6 +589,10 @@ do ->
         $set:
           touched: now
           touched_by: @userId
+      , multi: true
+      # remove from events
+      CalendarEvents.update { puzzle: pid },
+        $unset: puzzle: ''
       , multi: true
       # delete google drive folder
       deleteDriveFolder drive if drive?
@@ -1382,6 +1402,29 @@ do ->
       ,
         $set: "votes.#{@userId}": {canon: option, timestamp: UTCNow()}
 
+    setPuzzleForEvent: (event, puzzle) ->
+      check @userId, NonEmptyString
+      check event, NonEmptyString
+      check puzzle, Match.Maybe(NonEmptyString)
+      update = if puzzle?
+        check Puzzles.findOne(_id: puzzle), Object
+        $set: {puzzle}
+      else
+        $unset: puzzle: ''
+      return 0 < CalendarEvents.update {_id: event}, update
+
+    addEventAttendee: (event, who) ->
+      check @userId, NonEmptyString
+      check event, NonEmptyString
+      check Meteor.users.findOne(_id: who), Object
+      return 0 < CalendarEvents.update {_id: event}, $addToSet: attendees: who
+
+    removeEventAttendee: (event, who) ->
+      check @userId, NonEmptyString
+      check event, NonEmptyString
+      check Meteor.users.findOne(_id: who), Object
+      return 0 < CalendarEvents.update {_id: event}, $pull: attendees: who
+
     getRinghuntersFolder: ->
       check @userId, NonEmptyString
       return unless Meteor.isServer
@@ -1417,6 +1460,8 @@ share.model =
   Messages: Messages
   LastRead: LastRead
   Presence: Presence
+  Calendar: Calendar
+  CalendarEvents: CalendarEvents
   # helper methods
   collection: collection
   pretty_collection: pretty_collection
