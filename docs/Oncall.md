@@ -43,7 +43,7 @@ A sound will play when a new call-in arrives; you will also get a desktop notifi
 clipboard, mark the answer as submitted, and navigate to the puzzle URL in a new tab, from which you should find the link
 to submit the answer.
 
-Above the list of pending call-ins are a few of the least recently used quips added by solvers. You should choose a funny
+Below the list of pending call-ins are a few of the least recently used quips added by solvers. You should choose a funny
 one to answer the phone with, as entertaining HQ may make them delay our callbacks less if we call in wrong answers. (At
 least, it can't hurt.) If you really don't like one of the quips, you can punt it, which will move it to the bottom of the
 list without using it.
