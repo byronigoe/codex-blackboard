@@ -15,6 +15,7 @@ SPREADSHEET_TYPE = 'application/vnd.google-apps.spreadsheet'
 DOC_TYPE = 'application/vnd.google-apps.document'
 
 describe 'drive change polling', ->
+  @timeout 10000
 
   clock = null
   api = null
