@@ -129,8 +129,11 @@ export class CalendarSync
       $set: syncToken: @syncToken
     await Promise.all [bulkUpdates, updateSync]
 
-  _pollAndReschedule: -> 
-    await @pollOnce()
+  _pollAndReschedule: ->
+    try
+      await @pollOnce()
+    catch e
+      console.warn e
     @_schedulePoll()
 
   _schedulePoll: (interval = POLL_INTERVAL) ->
