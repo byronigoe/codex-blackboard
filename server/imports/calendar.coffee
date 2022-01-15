@@ -95,17 +95,22 @@ export class CalendarSync
           bulkEventUpdates.push
             deleteOne: filter: _id: event.id
         else
+          update = {}
           set = {}
           unset = {}
           if event.end?.dateTime?
             set.end = Date.parse event.end?.dateTime
+            update.$set = set
           if event.start?.dateTime?
             set.start = Date.parse event.start?.dateTime
+            update.$set = set
           setUnset = (eventKey, documentKey) ->
             if event[eventKey]?
               set[documentKey] = event[eventKey]
+              update.$set = set
             else
               unset[documentKey] = ''
+              update.$unset = unset
           setUnset 'summary', 'summary'
           setUnset 'location', 'location'
           setUnset 'description', 'description'
@@ -114,9 +119,7 @@ export class CalendarSync
             updateOne:
               filter: _id: event.id
               upsert: true
-              update:
-                $set: set
-                $unset: unset
+              update: update
       if events.nextPageToken?
         pageToken = events.nextPageToken
       else
@@ -129,8 +132,11 @@ export class CalendarSync
       $set: syncToken: @syncToken
     await Promise.all [bulkUpdates, updateSync]
 
-  _pollAndReschedule: -> 
-    await @pollOnce()
+  _pollAndReschedule: ->
+    try
+      await @pollOnce()
+    catch e
+      console.warn e
     @_schedulePoll()
 
   _schedulePoll: (interval = POLL_INTERVAL) ->

@@ -47,6 +47,7 @@ export default class DriveChangeWatcher
           return unless changeType is 'file'
           return if removed
           {name, mimeType, parents, createdTime, modifiedTime, webViewLink} = file
+          return unless parents?
           moddedAt = Date.parse modifiedTime
           createdAt = Date.parse createdTime
           channel = null
