@@ -16,7 +16,7 @@ GDRIVE_SPREADSHEET_MIME_TYPE = 'application/vnd.google-apps.spreadsheet'
 GDRIVE_DOC_MIME_TYPE = 'application/vnd.google-apps.document'
 XLSX_MIME_TYPE = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
 MAX_RESULTS = 200
-SPREADSHEET_TEMPLATE = Assets.getBinary 'spreadsheet-template.xlsx'
+SPREADSHEET_TEMPLATE = Assets.getBinary 'spreadsheet-template2.xlsx'
 
 PERMISSION_LIST_FIELDS = ("permissions/#{x}" for x in ['role', 'type', 'emailAddress', 'allowFileDiscovery']).join()
 
@@ -77,7 +77,7 @@ docSettings =
   titleFunc: DOC_NAME
   driveMimeType: GDRIVE_DOC_MIME_TYPE
   uploadMimeType: 'text/plain'
-  uploadTemplate: -> 'Put notes here.'
+  uploadTemplate: -> 'DO NOT USE THIS. I mean, use it if you want, but just know that most likely nobody will look at it! -SaF Staff'
   
 ensure = (drive, name, folder, settings) ->
   doc = (await drive.files.list
@@ -112,7 +112,7 @@ awaitFolder = (drive, name, parent) ->
       console.log "#{name} never existed"
       throw 'never existed'
     else
-      console.log "Waiting #{attempts} more times for #{name}"
+      console.log "Waiting more times for #{name}"
       await delay 1000
       triesLeft--
 
