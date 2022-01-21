@@ -79,7 +79,7 @@ docSettings =
   uploadMimeType: 'text/plain'
   uploadTemplate: -> 'DO NOT USE THIS. I mean, use it if you want, but just know that most likely nobody will look at it! -SaF Staff'
   
-ensure = (drive, name, folder, settings) ->
+ensure = (drive, name, folder, settings, createDiscord) ->
   doc = (await drive.files.list
     q: "name=#{quote settings.titleFunc name} and mimeType=#{quote settings.driveMimeType} and #{quote folder.id} in parents"
     pageSize: 1
@@ -95,6 +95,12 @@ ensure = (drive, name, folder, settings) ->
         mimeType: settings.uploadMimeType
         body: settings.uploadTemplate()
     ).data
+    http = require 'http'
+    if createDiscord
+      discordCreateUrl = "http://www.adamhunter.net/test_discord.php?channel_name=#{name}"
+      console.log discordCreateUrl
+      http.get discordCreateUrl, (res) ->
+        console.log res.statusCode
   await ensurePermissions drive, doc.id
   doc
 
@@ -187,8 +193,8 @@ export class Drive
   createPuzzle: (name) ->
     {folder, permissionsPromise} = Promise.await ensureFolder @drive, name, @rootFolder
     # is the spreadsheet already there?
-    spreadsheetP = ensure @drive, name, folder, spreadsheetSettings
-    docP = ensure @drive, name, folder, docSettings
+    spreadsheetP = ensure @drive, name, folder, spreadsheetSettings, false
+    docP = ensure @drive, name, folder, docSettings, false
     [spreadsheet, doc, p] = Promise.await Promise.all [spreadsheetP, docP, permissionsPromise]
     return {
       id: folder.id
