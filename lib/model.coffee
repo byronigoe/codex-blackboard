@@ -1380,6 +1380,11 @@ do ->
       # Return special folder used for uploads to general Ringhunters chat
       return share.drive.ringhuntersFolder
 
+
+    getPuzzleStatus: (name) ->
+      return unless Meteor.isServer
+      return "sample4#{name}"
+
     # if a round/puzzle folder gets accidentally deleted, this can be used to
     # manually re-create it.
     fixPuzzleFolder: (args) ->

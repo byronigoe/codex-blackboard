@@ -590,6 +590,9 @@ Template.blackboard_puzzle_cells.helpers
     Math.floor(@puzzle.solverTime / 60000)
   new_message: ->
     not @puzzle.last_read_timestamp? or @puzzle.last_read_timestamp < @puzzle.last_message_timestamp
+  sheetStatus: (name) ->
+    Meteor.call 'getPuzzleStatus', name, (error, n) ->
+      n
 
 colorHelper = -> model.getTag @, 'color'
 

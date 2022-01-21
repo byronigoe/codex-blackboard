@@ -15,7 +15,7 @@ if KEY? and Meteor.settings.decrypt_password?
   # Decrypt the JWT authentication key synchronously at startup
   KEY = decrypt KEY, Meteor.settings.decrypt_password
 EMAIL = Meteor.settings.email or '571639156428@developer.gserviceaccount.com'
-SCOPES = ['https://www.googleapis.com/auth/drive']
+SCOPES = ['https://www.googleapis.com/auth/drive', 'https://www.googleapis.com/auth/spreadsheets.readonly']
 
 # Intialize APIs and load rootFolder
 if Meteor.isAppTest

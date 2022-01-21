@@ -223,6 +223,9 @@ export class Drive
       docId: doc.data.files[0]?.id
     }
 
+  getPuzzleStatus: (name) ->
+    "sample3#{name}"
+
   listPuzzles: ->
     resp = {}
     results = []
