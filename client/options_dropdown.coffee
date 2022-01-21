@@ -1,5 +1,5 @@
 'use strict'
-import { DARK_MODE, HIDE_SOLVED, HIDE_SOLVED_FAVES, HIDE_SOLVED_METAS, STUCK_TO_TOP,
+import { ALPHABETICAL, DARK_MODE, HIDE_SOLVED, HIDE_SOLVED_FAVES, HIDE_SOLVED_METAS, SHOW_OLD, STUCK_TO_TOP,
 HIDE_USELESS_BOT_MESSAGES, MUTE_SOUND_EFFECTS, HIDE_OLD_PRESENCE, LESS_COLORFUL,
 START_VIDEO_MUTED, START_AUDIO_MUTED, COMPACT_MODE, CURRENT_COLUMNS} from './imports/settings.coffee'
 
@@ -26,6 +26,10 @@ Template.options_dropdown.events
     HIDE_SOLVED_METAS.set event.target.checked
   'change .bb-hide-solved-faves input': (event, template) ->
     HIDE_SOLVED_FAVES.set event.target.checked
+  'change .bb-show-old input': (event, template) ->
+    SHOW_OLD.set event.target.checked
+  'change .bb-alphabetical input': (event, template) ->
+    ALPHABETICAL.set event.target.checked
   'change .bb-compact-mode input': (event, template) ->
     COMPACT_MODE.set event.target.checked
   'change .bb-boring-mode input': (event, template) ->

@@ -3,7 +3,7 @@
 import canonical from '/lib/imports/canonical.coffee'
 import { jitsiUrl } from './imports/jitsi.coffee'
 import puzzleColor, { cssColorToHex, hexToCssColor } from './imports/objectColor.coffee'
-import { HIDE_SOLVED, HIDE_SOLVED_FAVES, HIDE_SOLVED_METAS, MUTE_SOUND_EFFECTS, SORT_REVERSE, VISIBLE_COLUMNS } from './imports/settings.coffee'
+import { ALPHABETICAL, SHOW_OLD, HIDE_SOLVED, HIDE_SOLVED_FAVES, HIDE_SOLVED_METAS, MUTE_SOUND_EFFECTS, SORT_REVERSE, VISIBLE_COLUMNS } from './imports/settings.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 import PuzzleDrag from './imports/puzzle_drag.coffee'
 
@@ -207,8 +207,11 @@ unassigned_helper = ->
     continue unless puzzle?
     { _id: id, puzzle: puzzle }
   editing = Meteor.userId() and (Session.get 'canEdit')
-  return p if editing or !HIDE_SOLVED.get()
-  p.filter (pp) -> !pp.puzzle.solved?
+  showOld = SHOW_OLD.get()
+  newP = p.filter (pp) -> showOld or !(/\(OLD\)/.test(pp.puzzle.name))
+  newPSorted = newP.sort( (a, b) => (a.puzzle.name < b.puzzle.name) )
+  return newPSorted if editing or !HIDE_SOLVED.get()
+  newPSorted.filter (pp) -> !pp.puzzle.solved?
 
 ############## groups, rounds, and puzzles ####################
 Template.blackboard.helpers
@@ -489,7 +492,10 @@ Template.blackboard_meta.events
 
 Template.blackboard_meta.helpers
   color: -> puzzleColor @puzzle if @puzzle?
-  showMeta: -> !HIDE_SOLVED_METAS.get() or (!this.puzzle?.solved?)
+  showMeta: ->
+    solvedFlag = !HIDE_SOLVED_METAS.get() or (!this.puzzle?.solved?)
+    oldFlag = SHOW_OLD.get() or !(/\(OLD\)/.test(this.puzzle.name))
+    return (solvedFlag and oldFlag)
   puzzles: ->
     if @puzzle.order_by
       filter =
@@ -504,8 +510,15 @@ Template.blackboard_meta.helpers
       puzzle: model.Puzzles.findOne(id) or { _id: id }
     } for id, index in this.puzzle.puzzles)
     editing = Meteor.userId() and (Session.get 'canEdit')
-    return p if editing or !HIDE_SOLVED.get()
-    p.filter (pp) -> !pp.puzzle.solved?
+    showOld = SHOW_OLD.get()
+    useAlphabetical = ALPHABETICAL.get()
+    newP = p.filter (pp) -> showOld or !(/\(OLD\)/.test(pp.puzzle.name))
+    newPSorted = newP
+    if useAlphabetical
+      newPSorted.sort (a,b) ->
+        return if a.puzzle.name >= b.puzzle.name then 1 else -1
+    return newPSorted if editing or !HIDE_SOLVED.get()
+    newPSorted.filter (pp) -> !pp.puzzle.solved?
   stuck: share.model.isStuck
   numHidden: ->
     return 0 unless HIDE_SOLVED.get()

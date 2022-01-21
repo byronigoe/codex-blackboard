@@ -12,8 +12,10 @@ class DefaultFalseSetting extends Setting
   get: -> 'true' is reactiveLocalStorage.getItem @name
 
 export CAP_JITSI_HEIGHT = new DefaultFalseSetting 'capJitsiHeight', 'jitsiHeightCapped'
+export ALPHABETICAL = new DefaultFalseSetting 'useAlphabetical'
 export HIDE_SOLVED = new DefaultFalseSetting 'hideSolved'
 export HIDE_SOLVED_FAVES = new DefaultFalseSetting 'hideSolvedFaves'
+export SHOW_OLD = new DefaultFalseSetting 'showOld'
 export HIDE_SOLVED_METAS = new DefaultFalseSetting 'hideSolvedMeta'
 export STUCK_TO_TOP = new DefaultFalseSetting 'stuckToTop'
 export HIDE_USELESS_BOT_MESSAGES = new DefaultFalseSetting 'nobot', 'noBot'
