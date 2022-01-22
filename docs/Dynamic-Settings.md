@@ -12,6 +12,12 @@ Hunt sites also tend to have common patterns for the URLs for the various puzzle
 
 Format: empty string, or a URL with the http or https protocol.
 
+# URL Separator
+
+For Round URL Prefix and Puzzle Url Prefix, the spaces in the puzzle name are trypically replaced with some other character. In the past it was typically `_`, but recently it has been `-`. Once you know what it is, you can set this to it.
+
+Format: string
+
 # Embed Puzzles
 
 It is possible to set the X-Frame-Options header on an HTTP response to tell browsers not to render that page in an iframe. MIT hunt sites tend not to use this, but other hunts like Caltech have. If the hunt you're solving does set this header, the puzzle tab on the puzzle page, which shows the puzzle alongside the chat, will be useless and generate errors. Set this to false to hide it.
