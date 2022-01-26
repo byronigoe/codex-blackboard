@@ -330,79 +330,10 @@ Template.header_breadcrumbs.onCreated ->
 Template.header_breadcrumbs.helpers
   breadcrumbs: -> breadcrumbs_var.get()
   crumb_template: -> "header_breadcrumb_#{@page}"
-  active: active
-  puzzle: ->
-    if Session.equals 'type', 'puzzles'
-      model.Puzzles.findOne Session.get 'id'
-    else null
-  picker: -> settings.PICKER_CLIENT_ID? and settings.PICKER_APP_ID? and settings.PICKER_DEVELOPER_KEY?
-  drive: -> switch Session.get 'type'
-    when 'general'
-      Session.get 'RINGHUNTERS_FOLDER'
-    when 'puzzles'
-      model.Puzzles.findOne(Session.get 'id')?.drive
-  generalChat: -> Session.equals 'room_name', 'general/0'
-
-Template.header_breadcrumbs.events
-  "click .bb-upload-file": (event, template) ->
-    folder = switch Session.get 'type'
-      when 'general'
-        Session.get 'RINGHUNTERS_FOLDER'
-      when 'puzzles'
-        model.Puzzles.findOne(Session.get 'id')?.drive
-    return unless folder
-    uploadToDriveFolder folder, (docs) ->
-      message = "uploaded "+(for doc in docs
-        "<a href='#{UI._escape doc.url}' target='_blank'><img src='#{UI._escape doc.iconUrl}' />#{UI._escape doc.name}</a> "
-      ).join(', ')
-      Meteor.call 'newMessage',
-        body: message
-        bodyIsHtml: true
-        action: true
-        room_name: Session.get('type')+'/'+Session.get('id')
 
 Template.header_breadcrumbs.onRendered ->
   # tool tips
   $(this.findAll('a.bb-drive-link[title]')).tooltip placement: 'bottom'
-
-uploadToDriveFolder = share.uploadToDriveFolder = (folder, callback) ->
-  google = window?.google
-  gapi = window?.gapi
-  unless google? and gapi?
-    console.warn 'Google APIs not loaded; Google Drive disabled.'
-    return
-  uploadView = new google.picker.DocsUploadView()\
-    .setParent(folder)
-  pickerCallback = (data) ->
-    switch data[google.picker.Response.ACTION]
-      when "loaded"
-        return
-      when google.picker.Action.PICKED
-        doc = data[google.picker.Response.DOCUMENTS][0]
-        url = doc[google.picker.Document.URL]
-        callback data[google.picker.Response.DOCUMENTS]
-      else
-        console.log 'Unexpected action:', data
-  gapi.auth.authorize
-    client_id: settings.PICKER_CLIENT_ID
-    scope: ['https://www.googleapis.com/auth/drive']
-    immediate: false
-  , (authResult) ->
-    oauthToken = authResult?.access_token
-    if authResult?.error or !oauthToken
-      console.log 'Authentication failed', authResult
-      return
-    new google.picker.PickerBuilder()\
-      .setAppId(settings.PICKER_APP_ID)\
-      .setDeveloperKey(settings.PICKER_DEVELOPER_KEY)\
-      .setOAuthToken(oauthToken)\
-      .setTitle('Upload Item')\
-      .addView(uploadView)\
-      .enableFeature(google.picker.Feature.NAV_HIDDEN)\
-      .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)\
-      .setCallback(pickerCallback)\
-      .build().setVisible true
-
 
 ############## nick selection ####################
 
