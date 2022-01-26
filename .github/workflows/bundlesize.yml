@@ -2,6 +2,9 @@ on:
   pull_request:
     types: [opened, synchronize, edited, reopened]
 
+permissions:
+  pull-requests: write
+
 name: "Bundle Size Diff"
 
 concurrency: 
