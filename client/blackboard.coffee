@@ -230,8 +230,9 @@ Template.blackboard.helpers
   driveFolder: -> Session.get 'RINGHUNTERS_FOLDER'
 
 Template.blackboard_status_grid.helpers
-  rounds: round_helper
+  rounds: -> model.Rounds.find {}, sort: [["sort_key", 'asc']]
   metas: meta_helper
+  color: -> puzzleColor @puzzle if @puzzle?
   unassigned: -> 
     for id, index in this.puzzles
       puzzle = model.Puzzles.findOne({_id: id, feedsInto: {$size: 0}, puzzles: {$exists: false}})
@@ -244,6 +245,7 @@ Template.blackboard_status_grid.helpers
       puzzle: model.Puzzles.findOne(id) or { _id: id }
     } for id, index in ps)
     return p
+  numSolved: (l) -> l.filter((p) -> p.puzzle.solved).length
   stuck: share.model.isStuck
 
 Template.blackboard.onRendered ->
