@@ -277,13 +277,11 @@
             {{/unless}}{{/each}}</div>
           {{else}}
             {{>link class="bb-status-grid-meta" id=_id text=puzzle.name}}
-            <div class="bb-status-grid-puzzles">
-              {{#each (puzzles puzzle.puzzles)}}
-                <span class="bb-status-grid-cell bb-status-{{#if puzzle.solved}}solved{{else if stuck puzzle}}stuck{{else}}unsolved{{/if}}">
-                  {{>link id=puzzle._id title=puzzle.name text=puzzle_num}}
-                </span>
-              {{/each}}
-            </div>
+            <div class="bb-status-grid-puzzles">{{#each (puzzles puzzle.puzzles)}}
+              <span class="bb-status-grid-cell bb-status-{{#if puzzle.solved}}solved{{else if stuck puzzle}}stuck{{else}}unsolved{{/if}}">
+                {{>link id=puzzle._id title=puzzle.name text=puzzle_num}}
+              </span>
+            {{/each}}</div>
           {{/if}}
           {{/let}}
         </div>
