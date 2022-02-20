@@ -206,7 +206,7 @@ describe 'blackboard', ->
       await afterFlushPromise()
       chai.assert.isBelow cluelessJQ.offset().top, akaJQ.offset().top, 'after manual'
 
-    it 'allows creating puzzles with buttons', ->
+    it 'allows creating and deleting puzzles with buttons', ->
       share.Router.EditPage()
       await waitForSubscriptions()
       await afterFlushPromise()
@@ -237,13 +237,21 @@ describe 'blackboard', ->
       indirect = share.model.Puzzles.findOne name: 'Indirectly Created'
       chai.assert.isOk indirect, 'indirect'
       chai.assert.notInclude indirect.feedsInto, meta._id
-      $("#unassigned#{round._id} [data-bbedit=\"feedsInto/#{round._id}/#{indirect._id}\"]").click()
-      await afterFlushPromise()
-      $("#unassigned#{round._id} [data-bbedit=\"feedsInto/#{round._id}/#{indirect._id}\"] [data-puzzle-id=\"#{meta._id}\"]").click()
+      $("#unassigned#{round._id} tr.puzzle[data-puzzle-id=\"#{indirect._id}\"] .bb-feed-meta [data-puzzle-id=\"#{meta._id}\"]").click()
       await waitForMethods()
       await afterFlushPromise()
       indirect = share.model.Puzzles.findOne name: 'Indirectly Created'
       chai.assert.include indirect.feedsInto, meta._id
+      $("#m#{meta._id} tr.puzzle[data-puzzle-id=\"#{indirect._id}\"] .bb-puzzle-title").click()
+      await afterFlushPromise()
+      $("#m#{meta._id} tr.puzzle[data-puzzle-id=\"#{indirect._id}\"] .bb-puzzle-title input").val('Creatively Undirected').focusout()
+      await waitForMethods()
+      chai.assert.include share.model.Puzzles.findOne(indirect._id), name: 'Creatively Undirected'
+      $("#m#{meta._id} tr.puzzle[data-puzzle-id=\"#{indirect._id}\"] .bb-puzzle-title .bb-delete-icon").click()
+      await afterFlushPromise()
+      $('#confirmModal .bb-confirm-ok').click()
+      await waitForMethods()
+      chai.assert.isNotOk share.model.Puzzles.findOne indirect._id
 
     it 'adds and deletes tags', ->
       share.Router.EditPage()
@@ -252,7 +260,8 @@ describe 'blackboard', ->
       bank = -> share.model.Puzzles.findOne name: 'Letter Bank'
       initial = bank()
       chai.assert.notOk initial.tags.meme
-      $("[data-puzzle-id=\"#{initial._id}\"] .bb-add-tag").first().click()
+      baseJq = $("tbody.meta[data-puzzle-id=\"#{initial.feedsInto[1]}\"] [data-puzzle-id=\"#{initial._id}\"]")
+      baseJq.find('.bb-add-tag').first().click()
       fill_alertify 'Meme'
       creation = bank()
       await waitForMethods()
@@ -261,9 +270,9 @@ describe 'blackboard', ->
         value: ''
         touched_by: 'testy'
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"]").first().click()
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value').first().click()
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"] input").first().val('yuno accept deposits?').focusout()
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value input').first().val('yuno accept deposits?').focusout()
       await waitForMethods()
       edit = bank()
       chai.assert.include edit.tags.meme,
@@ -271,9 +280,9 @@ describe 'blackboard', ->
         value: 'yuno accept deposits?'
         touched_by: 'testy'
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"]").first().click()
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value').first().click()
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"] input").first().val('yuno pay interest?').trigger new $.Event('keydown', which: 27)
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value input').first().val('yuno pay interest?').trigger new $.Event('keydown', which: 27)
       await waitForMethods()
       # no edit on escape
       edit = bank()
@@ -282,9 +291,9 @@ describe 'blackboard', ->
         value: 'yuno accept deposits?'
         touched_by: 'testy'
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"]").first().click()
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value').first().click()
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"] input").first().val('yuno pay interest?').trigger new $.Event('keyup', which: 13)
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value input').first().val('yuno pay interest?').trigger new $.Event('keyup', which: 13)
       await waitForMethods()
       # Edit on enter
       edit = bank()
@@ -293,9 +302,9 @@ describe 'blackboard', ->
         value: 'yuno pay interest?'
         touched_by: 'testy'
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"]").first().click()
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value').first().click()
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"] input").first().val('').trigger new $.Event('keyup', which: 13)
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value input').first().val('').trigger new $.Event('keyup', which: 13)
       await waitForMethods()
       # empty cancels
       edit = bank()
@@ -304,7 +313,7 @@ describe 'blackboard', ->
         value: 'yuno pay interest?'
         touched_by: 'testy'
       await afterFlushPromise()
-      $("[data-bbedit=\"tags/#{initial.feedsInto[1]}/#{initial._id}/meme/value\"] .bb-delete-icon").first().click()
+      baseJq.find('[data-tag-name="meme"] .bb-edit-tag-value .bb-delete-icon').first().click()
       await afterFlushPromise()
       $("#confirmModal .bb-confirm-ok").click()
       await waitForMethods()
@@ -322,9 +331,9 @@ describe 'blackboard', ->
         name: 'color5'
         value: 'plurple'
       await afterFlushPromise()
-      $("[data-bbedit$=\"/#{disgust._id}/color5/name\"]").first().click()
+      $("[data-puzzle-id=\"#{disgust._id}\"] [data-tag-name=\"color5\"] .bb-edit-tag-name").first().click()
       await afterFlushPromise()
-      $("[data-bbedit$=\"/#{disgust._id}/color5/name\"] input").first().val('Color6').trigger new $.Event('keyup', which: 13)
+      $("[data-puzzle-id=\"#{disgust._id}\"] [data-tag-name=\"color5\"] .bb-edit-tag-name input").first().val('Color6').trigger new $.Event('keyup', which: 13)
       await waitForMethods()
       disgust = share.model.Puzzles.findOne disgust._id
       chai.assert.include disgust.tags.color6,
@@ -344,9 +353,9 @@ describe 'blackboard', ->
         name: 'color3'
         value: 'plurple'
       await afterFlushPromise()
-      $("[data-bbedit$=\"/#{disgust._id}/color3/name\"]").first().click()
+      $("[data-puzzle-id=\"#{disgust._id}\"] [data-tag-name=\"color3\"] .bb-edit-tag-name").first().click()
       await afterFlushPromise()
-      $("[data-bbedit$=\"/#{disgust._id}/color3/name\"] input").first().val('').trigger new $.Event('keyup', which: 13)
+      $("[data-puzzle-id=\"#{disgust._id}\"] [data-tag-name=\"color3\"] .bb-edit-tag-name input").first().val('').trigger new $.Event('keyup', which: 13)
       await waitForMethods()
       disgust = share.model.Puzzles.findOne disgust._id
       chai.assert.isOk disgust.tags.color3
@@ -362,9 +371,9 @@ describe 'blackboard', ->
         name: 'color2'
         value: 'plurple'
       await afterFlushPromise()
-      $("[data-bbedit$=\"/#{disgust._id}/color2/name\"]").first().click()
+      $("[data-puzzle-id=\"#{disgust._id}\"] [data-tag-name=\"color2\"] .bb-edit-tag-name").first().click()
       await afterFlushPromise()
-      $("[data-bbedit$=\"/#{disgust._id}/color2/name\"] input").first().val('color').trigger new $.Event('keyup', which: 13)
+      $("[data-puzzle-id=\"#{disgust._id}\"] [data-tag-name=\"color2\"] .bb-edit-tag-name input").first().val('color').trigger new $.Event('keyup', which: 13)
       await waitForMethods()
       disgust = share.model.Puzzles.findOne disgust._id
       chai.assert.isOk disgust.tags.color2
