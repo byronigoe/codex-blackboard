@@ -8,6 +8,7 @@ import canonical from '/lib/imports/canonical.coffee'
 import { CAP_JITSI_HEIGHT, HIDE_OLD_PRESENCE, HIDE_USELESS_BOT_MESSAGES, MUTE_SOUND_EFFECTS } from './imports/settings.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 import {chunk_text, chunk_html} from './imports/chunk_text.coffee'
+import Favico from 'favico.js'
 
 model = share.model # import
 settings = share.settings # import
@@ -494,12 +495,7 @@ maybeScrollMessagesView = do ->
 scrollMessagesView = ->
   touchSelfScroll()
   instachat.scrolledToBottom = true
-  # first try using html5, then fallback to jquery
-  last = document?.querySelector?('#messages > *:last-child')
-  if last?.scrollIntoView?
-    last.scrollIntoView()
-  else
-    $("body").scrollTo 'max'
+  last = document?.querySelector?('#messages > *:last-child')?.scrollIntoView()
   # the scroll handler below will reset scrolledToBottom to be false
   instachat.scrolledToBottom = true
 
