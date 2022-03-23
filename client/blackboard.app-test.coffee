@@ -4,10 +4,6 @@ import {waitForMethods, waitForSubscriptions, promiseCall, promiseCallOn, afterF
 import chai from 'chai'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 
-fill_alertify = (text) ->
-  $('#alertify-text').val(text)
-  $('#alertify-ok').click()
-
 describe 'blackboard', ->
   @timeout 20000
   before ->
@@ -211,27 +207,35 @@ describe 'blackboard', ->
       await waitForSubscriptions()
       await afterFlushPromise()
       $('button.bb-add-round').click()
-      fill_alertify 'Created Round'
+      await afterFlushPromise()
+      chai.assert.isTrue $('#bb-new-round input').is(':focus')
+      $('#bb-new-round input').val('Created Round').focusout()
       await waitForMethods()
       await afterFlushPromise()
       round = share.model.Rounds.findOne name: 'Created Round'
       chai.assert.isOk round, 'round'
       $("#round#{round._id} button.bb-add-meta").click()
-      fill_alertify 'Created Meta'
+      await afterFlushPromise()
+      chai.assert.isTrue $('#bb-new-puzzle input').is(':focus')
+      $('#bb-new-puzzle input').val('Created Meta').focusout()
       await waitForMethods()
       await afterFlushPromise()
       meta = share.model.Puzzles.findOne name: 'Created Meta'
       chai.assert.isOk meta, 'meta'
       chai.assert.isArray meta.puzzles
       $("#m#{meta._id} .bb-meta-buttons .bb-add-puzzle").click()
-      fill_alertify 'Directly Created'
+      await afterFlushPromise()
+      chai.assert.isTrue $('#bb-new-puzzle input').is(':focus')
+      $('#bb-new-puzzle input').val('Directly Created').focusout()
       await waitForMethods()
       await afterFlushPromise()
       direct = share.model.Puzzles.findOne name: 'Directly Created'
       chai.assert.isOk direct, 'direct'
       chai.assert.include direct.feedsInto, meta._id
       $("#round#{round._id} .bb-add-puzzle").click()
-      fill_alertify 'Indirectly Created'
+      await afterFlushPromise()
+      chai.assert.isTrue $('#bb-new-puzzle input').is(':focus')
+      $('#bb-new-puzzle input').val('Indirectly Created').focusout()
       await waitForMethods()
       await afterFlushPromise()
       indirect = share.model.Puzzles.findOne name: 'Indirectly Created'
@@ -261,8 +265,10 @@ describe 'blackboard', ->
       initial = bank()
       chai.assert.notOk initial.tags.meme
       baseJq = $("tbody.meta[data-puzzle-id=\"#{initial.feedsInto[1]}\"] [data-puzzle-id=\"#{initial._id}\"]")
-      baseJq.find('.bb-add-tag').first().click()
-      fill_alertify 'Meme'
+      baseJq.find('button.bb-add-tag').first().click()
+      await afterFlushPromise()
+      chai.assert.isTrue baseJq.find('.bb-tag-table .bb-add-tag input').is(':focus')
+      baseJq.find('.bb-tag-table .bb-add-tag input').val('Meme').focusout()
       creation = bank()
       await waitForMethods()
       chai.assert.include creation.tags.meme,
