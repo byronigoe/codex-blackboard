@@ -513,29 +513,6 @@ Template.chat_format_body.helpers
     else
       "text_chunk_#{type}"
 
-# unstick from bottom if the user manually scrolls
-$(window).scroll (event) ->
-  return unless Session.equals('currentPage', 'chat')
-  return if instachat.bottomObserver
-  #console.log if selfScroll? then 'Self scroll' else 'External scroll'
-  return if selfScroll?
-  # set to false, just in case older browser doesn't have scroll properties
-  instachat.scrolledToBottom = false
-  [body, html] = [document.body, document.documentElement]
-  return unless html?.scrollTop? and html?.scrollHeight?
-  return unless html?.clientHeight?
-  SLOP=80
-  [scrollPos, scrollMax] = [body.scrollTop+html.clientHeight, body.scrollHeight]
-  atBottom = (scrollPos+SLOP >= scrollMax)
-  # firefox says that the HTML element is scrolling, not the body element...
-  if html.scrollTopMax?
-    atBottom = (html.scrollTop+SLOP >= (html.scrollTopMax-1)) or atBottom
-  unless Meteor.isProduction
-    console.log 'Scroll debug:', 'atBottom', atBottom, 'scrollPos', scrollPos, 'scrollMax', scrollMax
-    console.log ' body scrollTop', body.scrollTop, 'scrollTopMax', body.scrollTopMax, 'scrollHeight', body.scrollHeight, 'clientHeight', body.clientHeight
-    console.log ' html scrollTop', html.scrollTop, 'scrollTopMax', html.scrollTopMax, 'scrollHeight', html.scrollHeight, 'clientHeight', html.clientHeight
-  instachat.scrolledToBottom = atBottom
-
 Template.messages_input.helpers
   show_presence: -> Template.instance().show_presence.get()
   whos_here: whos_here_helper
