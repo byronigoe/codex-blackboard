@@ -33,7 +33,6 @@ export default okCancelEvents = (selector, callbacks) ->
   evspec = ("#{ev} #{selector}" for ev in ['keyup','keydown','focusout'])
   events = {}
   events[evspec.join(', ')] = (evt, template) ->
-    console.log event.type, event.which
     if evt.type is "keydown" and evt.which is 27
       # escape = cancel
       cancel.call this, evt, template
