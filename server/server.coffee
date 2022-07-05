@@ -164,7 +164,7 @@ Meteor.publish 'register-presence', loginRequired (room_name, scope) ->
 Meteor.publish null, loginRequired ->
   registerPresence.call @, null, 'online'
 
-Meteor.publish 'settings', loginRequired -> Settings.find()
+Meteor.publish null, loginRequired -> Settings.find()
 
 Meteor.publish 'last-puzzle-room-message', loginRequired (puzzle_id) ->
   check puzzle_id, NonEmptyString

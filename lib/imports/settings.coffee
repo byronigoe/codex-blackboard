@@ -132,6 +132,3 @@ Meteor.methods
       value: setting.convert raw_value
       touched: Date.now()
       touched_by: @userId
-
-if Meteor.isClient
-  Meteor.subscribe 'settings'
