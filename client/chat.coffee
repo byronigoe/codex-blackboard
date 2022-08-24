@@ -92,13 +92,16 @@ Template.chat.helpers
     type isnt 'general' and \
       (model.collection(type)?.findOne Session.get("id"))?.solved
 
+starred_messages_room = ->
+  Template.currentData().room_name ? Session.get 'room_name'
+
 Template.starred_messages.onCreated ->
   this.autorun =>
-    this.subscribe 'starred-messages', Session.get 'room_name'
+    this.subscribe 'starred-messages', starred_messages_room()
 
 Template.starred_messages.helpers
   messages: ->
-    model.Messages.find {room_name: (Session.get 'room_name'), starred: true },
+    model.Messages.find {room_name: starred_messages_room(), starred: true },
       sort: [['timestamp', 'asc']]
       transform: messageTransform
 
@@ -237,7 +240,6 @@ Template.messages.onCreated ->
     # the limit changes.
     room_name = Session.get 'room_name'
     return unless room_name
-    @subscribe 'presence-for-room', room_name
     @subscribe 'register-presence', room_name, 'chat'
     
   @autorun =>
@@ -302,7 +304,7 @@ Template.messages.events
     Session.set 'limit', Session.get('limit') + settings.CHAT_LIMIT_INCREMENT
 
 whos_here_helper = ->
-  roomName = Session.get('type') + '/' + Session.get('id')
+  roomName = Session.get('room_name')
   return model.Presence.find {room_name: roomName, scope: 'chat'}, {sort: ['joined_timestamp']}
 
 Template.embedded_chat.onCreated ->
@@ -526,6 +528,11 @@ MSG_AT_START_PATTERN = /^\/m(sg)? /
 AT_MENTION_PATTERN = /(^|[\s])@([A-Za-z_0-9]*)$/
 
 Template.messages_input.onCreated ->
+  @autorun =>
+    room_name = Session.get 'room_name'
+    return unless room_name
+    @subscribe 'presence-for-room', room_name
+
   @show_presence = new ReactiveVar false
   @query = new ReactiveVar null
   @queryCursor = new ReactiveVar null
