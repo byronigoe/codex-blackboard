@@ -1,6 +1,6 @@
 #!/bin/bash
 
-scriptroot=$(readlink -f $(dirname $0))
+scriptroot=$(readlink -f "$(dirname "$0")")
 
 if [ "$(findmnt -T /var/lib/mongodb -n -o fstype)" != "xfs" ] ; then
   echo >&2 "MongoDB will complain if /var/lib/mongodb is a file system other than xfs."
@@ -17,12 +17,12 @@ fi
 
 domainname=$1
 while [ -z "$domainname" ] ; do
-  read -p "Need a domain name for the site: " domainname
+  read -r -p "Need a domain name for the site: " domainname
 done
 
 set -e
 
-cd $HOME
+cd "$HOME"
 curl https://install.meteor.com/ | sh
 
 # Set up apt
@@ -35,7 +35,7 @@ sudo apt-get install -y mongodb-org nodejs software-properties-common
 
 # This will help us template some files
 sudo npm install -g handlebars-cmd
-cd $scriptroot/..
+cd "$scriptroot"/..
 
 # Build the bundle, then install it.
 meteor npm install
@@ -46,12 +46,12 @@ cd /opt/codex/bundle/programs/server
 sudo npm install
 
 # Copy the static files
-sudo cp -a $scriptroot/installfiles/* /
+sudo cp -a "$scriptroot"/installfiles/* /
 sudo systemctl daemon-reload
 node_path=$(npm root -g --no-update-notifier)
 
-handlebars < $scriptroot/installtemplates/etc/codex-common.env.handlebars --domainname "$domainname" | sudo bash -c "cat > /etc/codex-common.env"
-handlebars < $scriptroot/installtemplates/etc/codex-batch.env.handlebars --node_path "$node_path" | sudo bash -c "cat > /etc/codex-batch.env"
+handlebars < "$scriptroot/installtemplates/etc/codex-common.env.handlebars" --domainname "$domainname" | sudo bash -c "cat > /etc/codex-common.env"
+handlebars < "$scriptroot/installtemplates/etc/codex-batch.env.handlebars" --node_path "$node_path" | sudo bash -c "cat > /etc/codex-batch.env"
 sudo vim /etc/codex-common.env
 sudo chmod 600 /etc/codex-batch.env
 sudo vim /etc/codex-batch.env
@@ -64,13 +64,13 @@ sudo vim /etc/codex-batch.env
 # won't direct any at it. We will also start one task per core starting at
 # port 28001, and have nginx balance over them.
 PORTS=""
-if [ $(nproc) -eq 1 ]; then
+if [ "$(nproc)" -eq 1 ]; then
   PORTS="--port 28000"
 else
-  for index in $(seq 1 $(nproc)); do
-    port=$[$index + 28000]
+  for index in $(seq 1 "$(nproc)"); do
+    port=$((index + 28000))
     PORTS="$PORTS --port $port"
-    sudo systemctl enable codex@${port}.service
+    sudo systemctl enable "codex@${port}.service"
   done
 fi
 # ensure transparent hugepages get disabled. Mongodb wants this.
@@ -86,13 +86,14 @@ sudo systemctl enable codex-batch.service
   
 sudo snap install --classic certbot
 
-sudo certbot certonly --standalone -d $domainname
+sudo certbot certonly --standalone -d "$domainname"
 
 sudo apt-get install -y nginx
   
 cd /etc/ssl/certs
 sudo openssl dhparam -out dhparam.pem 4096
-handlebars < $scriptroot/installtemplates/etc/nginx/sites-available/codex.handlebars $PORTS --domainname "$domainname" --staticroom "$(uuidgen)" | sudo bash -c "cat > /etc/nginx/sites-available/codex"
+# shellcheck disable=SC2086 
+handlebars < "$scriptroot/installtemplates/etc/nginx/sites-available/codex.handlebars" $PORTS --domainname "$domainname" --staticroom "$(uuidgen)" | sudo bash -c "cat > /etc/nginx/sites-available/codex"
 sudo ln -s /etc/nginx/sites-{available,enabled}/codex
 sudo rm /etc/nginx/sites-enabled/default
   

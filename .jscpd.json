@@ -1,0 +1,13 @@
+{
+  "threshold": 0,
+  "reporters": [
+    "consoleFull"
+  ],
+  "ignore": [
+    "**/__snapshots__/**",
+    "**/*.test.coffee",
+    "**/*.app-test.coffee",
+    "**/testdata/**"
+  ],
+  "absolute": true
+}

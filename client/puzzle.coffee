@@ -103,25 +103,20 @@ Template.puzzle_info.events
   'click .bb-add-tag-button': (event, template) ->
     template.addingTag.set true
 
+dataHelper = ->
+  r = {}
+  puzzle = r.puzzle = model.Puzzles.findOne Session.get 'id'
+  round = r.round = model.Rounds.findOne puzzles: puzzle?._id
+  r.isMeta = puzzle?.puzzles?
+  r.stuck = model.isStuck puzzle
+  r.capType = capType puzzle
+  return r
+
 Template.puzzle_info_frame.helpers
-  data: ->
-    r = {}
-    puzzle = r.puzzle = model.Puzzles.findOne Session.get 'id'
-    round = r.round = model.Rounds.findOne puzzles: puzzle?._id
-    r.isMeta = puzzle?.puzzles?
-    r.stuck = model.isStuck puzzle
-    r.capType = capType puzzle
-    return r
+  data: dataHelper
 
 Template.puzzle.helpers
-  data: ->
-    r = {}
-    puzzle = r.puzzle = model.Puzzles.findOne Session.get 'id'
-    round = r.round = model.Rounds.findOne puzzles: puzzle?._id
-    r.isMeta = puzzle?.puzzles?
-    r.stuck = model.isStuck puzzle
-    r.capType = capType puzzle
-    return r
+  data: dataHelper
   currentViewIs: (view) -> currentViewIs @puzzle, view
   docLoaded: -> Template.instance().docLoaded.get()
 
@@ -139,19 +134,19 @@ Template.puzzle.onCreated ->
       return
     model.Puzzles.findOne(Session.get('id'), {fields: {doc: 1}})
     @docLoaded.set false
-  this.autorun =>
+  this.autorun ->
     # set page title
     id = Session.get 'id'
     puzzle = model.Puzzles.findOne id
     name = puzzle?.name or id
     $("title").text("#{capType puzzle}: #{name}")
-  @autorun =>
+  @autorun ->
     return unless Session.equals 'type', 'puzzles'
     if currentViewIs model.Puzzles.findOne(Session.get('id')), 'info'
       Session.set 'topRight', null
     else
       Session.set 'topRight', 'puzzle_info_frame'
-  @autorun =>
+  @autorun ->
     id = Session.get 'id'
     return unless id
     puzzle = model.Puzzles.findOne id,
@@ -169,7 +164,8 @@ Template.puzzle_summon_button.events
     if (await confirm
       message: 'Are you sure you want to cancel this request for help?'
       ok_button: "Yes, this #{model.pretty_collection(Session.get 'type')} is no longer stuck"
-      no_button: 'Nevermind, this is still STUCK')
+      no_button: 'Nevermind, this is still STUCK'
+    )
       Meteor.call 'unsummon',
         type: Session.get 'type'
         object: Session.get 'id'
@@ -188,9 +184,9 @@ Template.puzzle_summon_modal.events
     other = template.$('.stuck-other').val()
     how = "Stuck #{at}"
     if need isnt 'other'
-        how += ", need #{need}"
+      how += ", need #{need}"
     if other isnt ''
-        how += ": #{other}"
+      how += ": #{other}"
     Meteor.call 'summon',
       type: Session.get 'type'
       object: Session.get 'id'
