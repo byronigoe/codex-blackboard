@@ -1,21 +1,21 @@
 'use strict'
 
-import './000setup.coffee'  # for side effects
-import './codex.coffee'  # for side effects
+import codex from './codex.coffee'
 import '/lib/model.coffee'
+import { CallIns, Messages, Polls, Puzzles, Rounds } from '/lib/imports/collections.coffee'
 import chai from 'chai'
 import sinon from 'sinon'
 import { resetDatabase } from 'meteor/xolvio:cleaner'
 import Robot from '../imports/hubot.coffee'
+import { drive } from '/lib/imports/environment.coffee'
 import { waitForDocument } from '/lib/imports/testutils.coffee'
 import { all_settings, EmbedPuzzles, MaximumMemeLength, PuzzleUrlPrefix, RoundUrlPrefix } from '/lib/imports/settings.coffee'
 import { impersonating } from '../imports/impersonate.coffee'
 
-model = share.model
-
 describe 'codex hubot script', ->
   robot = null
   clock = null
+  driveMethods = null
 
   beforeEach ->
     resetDatabase()
@@ -25,7 +25,7 @@ describe 'codex hubot script', ->
     # can't use plain hubot because this script uses priv, which isn't part of
     # the standard message class or adapter.
     robot = new Robot 'testbot', 'testbot@testbot.test'
-    share.hubot.codex robot
+    codex robot
     robot.run()
     clock.tick 1
     driveMethods =
@@ -35,42 +35,37 @@ describe 'codex hubot script', ->
         docId: 'did'
       renamePuzzle: sinon.spy()
       deletePuzzle: sinon.spy()
-    if share.drive?
-      sinon.stub(share, 'drive').value(driveMethods)
-    else
-      share.drive = driveMethods
 
   afterEach ->
     robot.shutdown()
     clock.restore()
-    sinon.restore()
 
   describe 'setAnswer', ->
     it 'fails when puzzle does not exist', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'puzzles/12345abcde'
         timestamp: Date.now()
         body: 'bot the answer to latino alphabet is linear abeja'
-      waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+      waitForDocument Messages, {nick: 'testbot', timestamp: 7},
         body: '@torgen: I can\'t find a puzzle called "latino alphabet".'
         room_name: 'puzzles/12345abcde'
         useful: true
         mention: ['torgen']
 
     it 'sets answer', ->
-      model.Puzzles.insert
+      Puzzles.insert
         _id: '12345abcde'
         name: 'Latino Alphabet'
         canon: 'latino_alphabet'
         feedsInto: []
         tags: {}
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'puzzles/12345abcde'
         timestamp: Date.now()
         body: 'bot the answer to latino alphabet is linear abeja'
-      await waitForDocument model.Puzzles, {_id: '12345abcde', solved_by: 'torgen'},
+      await waitForDocument Puzzles, {_id: '12345abcde', solved_by: 'torgen'},
         touched: 7
         touched_by: 'torgen'
         solved: 7
@@ -80,14 +75,14 @@ describe 'codex hubot script', ->
           value: 'linear abeja'
           touched: 7
           touched_by: 'torgen'
-      waitForDocument model.Messages, {nick: 'testbot', body: /^@torgen:/},
+      waitForDocument Messages, {nick: 'testbot', body: /^@torgen:/},
         timestamp: 7
         useful: true
         room_name: 'puzzles/12345abcde'
         mention: ['torgen']
 
     it 'overwrites answer', ->
-      model.Puzzles.insert
+      Puzzles.insert
         _id: '12345abcde'
         name: 'Latino Alphabet'
         canon: 'latino_alphabet'
@@ -103,12 +98,12 @@ describe 'codex hubot script', ->
             value: 'vasco de gamma'
             touched: 3
             touched_by: 'cjb'
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'puzzles/12345abcde'
         timestamp: Date.now()
         body: 'bot the answer to latino alphabet is linear abeja'
-      await waitForDocument model.Puzzles, {_id: '12345abcde', solved_by: 'torgen', confirmed_by: 'torgen'},
+      await waitForDocument Puzzles, {_id: '12345abcde', solved_by: 'torgen', confirmed_by: 'torgen'},
         touched: 7
         touched_by: 'torgen'
         solved: 7
@@ -117,14 +112,14 @@ describe 'codex hubot script', ->
           value: 'linear abeja'
           touched: 7
           touched_by: 'torgen'
-      waitForDocument model.Messages, {nick: 'testbot', body: /^@torgen:/},
+      waitForDocument Messages, {nick: 'testbot', body: /^@torgen:/},
         timestamp: 7
         useful: true
         room_name: 'puzzles/12345abcde'
         mention: ['torgen']
 
     it 'leaves old answer', ->
-      model.Puzzles.insert
+      Puzzles.insert
         _id: '12345abcde'
         name: 'Latino Alphabet'
         canon: 'latino_alphabet'
@@ -140,17 +135,17 @@ describe 'codex hubot script', ->
             value: 'linear abeja'
             touched: 3
             touched_by: 'cjb'
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'puzzles/12345abcde'
         timestamp: Date.now()
         body: 'bot the answer to latino alphabet is linear abeja'
-      await waitForDocument model.Messages, {nick: 'testbot', body: /^@torgen:/},
+      await waitForDocument Messages, {nick: 'testbot', body: /^@torgen:/},
         timestamp: 7
         useful: true
         room_name: 'puzzles/12345abcde'
         mention: ['torgen']
-      chai.assert.deepInclude model.Puzzles.findOne(_id: '12345abcde'),
+      chai.assert.deepInclude Puzzles.findOne(_id: '12345abcde'),
         touched: 3
         touched_by: 'cjb'
         solved: 3
@@ -164,7 +159,7 @@ describe 'codex hubot script', ->
 
   describe 'deleteAnswer', ->
     it 'deletes answer', ->
-      model.Puzzles.insert
+      Puzzles.insert
         _id: '12345abcde'
         name: 'Latino Alphabet'
         canon: 'latino_alphabet'
@@ -179,27 +174,27 @@ describe 'codex hubot script', ->
             value: 'vasco de gamma'
             touched: 3
             touched_by: 'cjb'
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'puzzles/fghij67890'
         timestamp: Date.now()
         body: 'bot delete answer for latino alphabet'
-      await waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.answer': $exists: false},
+      await waitForDocument Puzzles, {_id: '12345abcde', 'tags.answer': $exists: false},
         touched: 7
         touched_by: 'torgen'
-      waitForDocument model.Messages, {nick: 'testbot', body: /^@torgen:/},
+      waitForDocument Messages, {nick: 'testbot', body: /^@torgen:/},
         timestamp: 7
         useful: true
         room_name: 'puzzles/fghij67890'
         mention: ['torgen']
 
     it 'fails when no such puzzle exists', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot delete answer for latino alphabet'
-      waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+      waitForDocument Messages, {nick: 'testbot', timestamp: 7},
         body: '@torgen: I can\'t find a puzzle called "latino alphabet".'
         room_name: 'general/0'
         useful: true
@@ -209,18 +204,18 @@ describe 'codex hubot script', ->
     describe 'of answer', ->
       describe 'in puzzle room', ->
         it 'infers puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/12345abcde'
             timestamp: Date.now()
             body: 'bot call in linear abeja'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -229,18 +224,18 @@ describe 'codex hubot script', ->
             callin_type: 'answer'
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/fghij67890'
             timestamp: Date.now()
             body: 'bot call in linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -249,18 +244,18 @@ describe 'codex hubot script', ->
             callin_type: 'answer'
 
         it 'understands backsolved', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/12345abcde'
             timestamp: Date.now()
             body: 'bot call in backsolved linear abeja'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             backsolve: true
             target: '12345abcde'
             created: 7
@@ -270,18 +265,18 @@ describe 'codex hubot script', ->
             callin_type: 'answer'
 
         it 'understands provided', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/12345abcde'
             timestamp: Date.now()
             body: 'bot call in provided linear abeja'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             provided: true
             target: '12345abcde'
             created: 7
@@ -292,44 +287,44 @@ describe 'codex hubot script', ->
 
       describe 'in general room', ->
         it 'fails when puzzle is not specified', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot call in linear abeja'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: You need to tell me which puzzle this is for.'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'fails when puzzle does not exist', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot call in linear abeja for latino alphabet'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: I can\'t find a puzzle called "latino alphabet".'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot call in linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -340,18 +335,18 @@ describe 'codex hubot script', ->
     describe 'of interaction request', ->
       describe 'in puzzle room', ->
         it 'infers puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/12345abcde'
             timestamp: Date.now()
             body: 'bot request interaction linear abeja'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -360,18 +355,18 @@ describe 'codex hubot script', ->
             callin_type: 'interaction request'
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/fghij67890'
             timestamp: Date.now()
             body: 'bot request interaction linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -381,44 +376,44 @@ describe 'codex hubot script', ->
 
       describe 'in general room', ->
         it 'fails when puzzle is not specified', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot request interaction linear abeja'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: You need to tell me which puzzle this is for.'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'fails when puzzle does not exist', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot request interaction linear abeja for latino alphabet'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: I can\'t find a puzzle called "latino alphabet".'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot request interaction linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -429,18 +424,18 @@ describe 'codex hubot script', ->
     describe 'of message to hq', ->
       describe 'in puzzle room', ->
         it 'infers puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/12345abcde'
             timestamp: Date.now()
             body: 'bot tell HQ linear abeja'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -449,18 +444,18 @@ describe 'codex hubot script', ->
             callin_type: 'message to hq'
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/fghij67890'
             timestamp: Date.now()
             body: 'bot tell HQ linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -470,44 +465,44 @@ describe 'codex hubot script', ->
 
       describe 'in general room', ->
         it 'fails when puzzle is not specified', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot tell HQ linear abeja'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: You need to tell me which puzzle this is for.'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'fails when puzzle does not exist', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot tell HQ linear abeja for latino alphabet'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: I can\'t find a puzzle called "latino alphabet".'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot tell HQ linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -518,18 +513,18 @@ describe 'codex hubot script', ->
     describe 'of expected callback', ->
       describe 'in puzzle room', ->
         it 'infers puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/12345abcde'
             timestamp: Date.now()
             body: 'bot expect  callback linear abeja'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -538,18 +533,18 @@ describe 'codex hubot script', ->
             callin_type: 'expected callback'
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'puzzles/fghij67890'
             timestamp: Date.now()
             body: 'bot expect callback linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -559,44 +554,44 @@ describe 'codex hubot script', ->
 
       describe 'in general room', ->
         it 'fails when puzzle is not specified', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot expect callback linear abeja'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: You need to tell me which puzzle this is for.'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'fails when puzzle does not exist', ->
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot expect callback linear abeja for latino alphabet'
-          await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+          await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
             body: '@torgen: I can\'t find a puzzle called "latino alphabet".'
             room_name: 'general/0'
             useful: true
             mention: ['torgen']
-          chai.assert.isUndefined model.CallIns.findOne()
+          chai.assert.isUndefined CallIns.findOne()
 
         it 'allows specifying puzzle', ->
-          model.Puzzles.insert
+          Puzzles.insert
             _id: '12345abcde'
             name: 'Latino Alphabet'
             canon: 'latino_alphabet'
             feedsInto: []
             tags: {}
-          model.Messages.insert
+          Messages.insert
             nick: 'torgen'
             room_name: 'general/0'
             timestamp: Date.now()
             body: 'bot expect callback linear abeja for latino alphabet'
-          waitForDocument model.CallIns, {answer: 'linear abeja'},
+          waitForDocument CallIns, {answer: 'linear abeja'},
             target: '12345abcde'
             created: 7
             created_by: 'torgen'
@@ -604,240 +599,240 @@ describe 'codex hubot script', ->
             touched_by: 'torgen'
             callin_type: 'expected callback'
 
-  describe 'newPuzzle', ->
+  describe 'newPuzzle', -> drive.withValue driveMethods, ->
     beforeEach -> PuzzleUrlPrefix.ensure()
 
     it 'creates in named meta', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in even this poem'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet'},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet'},
         canon: 'latino_alphabet'
         feedsInto: [mid]
-      await waitForDocument model.Puzzles, {_id: mid, puzzles: puzz._id}, {}
-      await waitForDocument model.Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
+      await waitForDocument Puzzles, {_id: mid, puzzles: puzz._id}, {}
+      await waitForDocument Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
 
     it 'created with specified link', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in even this poem with url https://bluedot.sg/puzz/la'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet'},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet'},
         canon: 'latino_alphabet'
         feedsInto: [mid]
         link: 'https://bluedot.sg/puzz/la'
-      await waitForDocument model.Puzzles, {_id: mid, puzzles: puzz._id}, {}
-      await waitForDocument model.Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
+      await waitForDocument Puzzles, {_id: mid, puzzles: puzz._id}, {}
+      await waitForDocument Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
 
     it 'creates in this meta', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: "puzzles/#{mid}"
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in this'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet'},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet'},
         canon: 'latino_alphabet'
         feedsInto: [mid]
-      await waitForDocument model.Puzzles, {_id: mid, puzzles: puzz._id}, {}
+      await waitForDocument Puzzles, {_id: mid, puzzles: puzz._id}, {}
 
     it 'creates in named round', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
         puzzles: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in elliptic curve'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet'},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet'},
         canon: 'latino_alphabet'
         feedsInto: []
-      await waitForDocument model.Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
-      chai.assert.deepInclude model.Puzzles.findOne(mid), puzzles: []
+      await waitForDocument Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
+      chai.assert.deepInclude Puzzles.findOne(mid), puzzles: []
 
     it 'fails when one exists by that name', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
         puzzles: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Even this poem is a new puzzle in elliptic curve'
-      await waitForDocument model.Messages, {body: $regex: /@torgen: There's already.*a puzzle named Even This Poem/},
+      await waitForDocument Messages, {body: $regex: /@torgen: There's already.*a puzzle named Even This Poem/},
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
         useful: true
         mention: ['torgen']
-      chai.assert.deepInclude model.Rounds.findOne(rid), puzzles: [mid]
+      chai.assert.deepInclude Rounds.findOne(rid), puzzles: [mid]
 
     it 'creates in this round', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
         puzzles: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: "rounds/#{rid}"
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in this'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet', puzzles: null},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet', puzzles: null},
         canon: 'latino_alphabet'
         feedsInto: []
-      await waitForDocument model.Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
-      chai.assert.deepInclude model.Puzzles.findOne(mid), puzzles: []
+      await waitForDocument Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
+      chai.assert.deepInclude Puzzles.findOne(mid), puzzles: []
 
     it 'creates meta in this round', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
         puzzles: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: "rounds/#{rid}"
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new meta in this'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet'},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet'},
         canon: 'latino_alphabet'
         feedsInto: []
         puzzles: []
-      await waitForDocument model.Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
-      chai.assert.deepInclude model.Puzzles.findOne(mid), puzzles: []
+      await waitForDocument Rounds, {_id: rid, puzzles: [mid, puzz._id]}, {}
+      chai.assert.deepInclude Puzzles.findOne(mid), puzzles: []
 
     it 'fails when this is not a puzzle or round', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Even This Poem'
         canon: 'even_this_poem'
         feedsInto: []
         puzzles: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: [mid]
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in this'
-      await waitForDocument model.Messages, {body: '@torgen: You need to tell me which puzzle this is for.'},
+      await waitForDocument Messages, {body: '@torgen: You need to tell me which puzzle this is for.'},
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
         useful: true
         mention: ['torgen']
-      chai.assert.deepInclude model.Puzzles.findOne(mid), puzzles: []
-      chai.assert.deepInclude model.Rounds.findOne(rid), puzzles: [mid]
+      chai.assert.deepInclude Puzzles.findOne(mid), puzzles: []
+      chai.assert.deepInclude Rounds.findOne(rid), puzzles: [mid]
 
     it 'allows specifying type to create in', ->
-      mid = model.Puzzles.insert
+      mid = Puzzles.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         feedsInto: []
         puzzles: []
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: []
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in round elliptic curve'
-      puzz = await waitForDocument model.Puzzles, {name: 'Latino Alphabet'},
+      puzz = await waitForDocument Puzzles, {name: 'Latino Alphabet'},
         canon: 'latino_alphabet'
         feedsInto: []
-      await waitForDocument model.Rounds, {_id: rid, puzzles: [puzz._id]}, {}
-      chai.assert.deepInclude model.Puzzles.findOne(mid), puzzles: []
+      await waitForDocument Rounds, {_id: rid, puzzles: [puzz._id]}, {}
+      chai.assert.deepInclude Puzzles.findOne(mid), puzzles: []
 
     it 'fails when no such thing to create in', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Latino Alphabet is a new puzzle in elliptic curve'
-      waitForDocument model.Messages, {body: '@torgen: I can\'t find anything called "elliptic curve".'},
+      waitForDocument Messages, {body: '@torgen: I can\'t find anything called "elliptic curve".'},
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
         useful: true
         mention: ['torgen']
 
-  describe 'deletePuzzle', ->
+  describe 'deletePuzzle', -> drive.withValue driveMethods, ->
     it 'deletes puzzle', ->
-      pid = model.Puzzles.insert
+      pid = Puzzles.insert
         name: 'Foo'
         canon: 'foo'
         feedsInto: []
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot delete puzzle foo'
-      await waitForDocument model.Messages, { body: '@torgen: Okay, I deleted "Foo".' },
+      await waitForDocument Messages, { body: '@torgen: Okay, I deleted "Foo".' },
         nick: 'testbot'
         room_name: 'general/0'
         timestamp: 7
         useful: true
         mention: ['torgen']
-      chai.assert.isUndefined model.Puzzles.findOne _id: pid
+      chai.assert.isUndefined Puzzles.findOne _id: pid
 
     it 'fails when puzzle does not exist', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot delete puzzle foo'
-      waitForDocument model.Messages, { body: '@torgen: I can\'t find a puzzle called "foo".' },
+      waitForDocument Messages, { body: '@torgen: I can\'t find a puzzle called "foo".' },
         nick: 'testbot'
         room_name: 'general/0'
         timestamp: 7
@@ -848,12 +843,12 @@ describe 'codex hubot script', ->
     it 'creates round', ->
       RoundUrlPrefix.ensure()
       impersonating 'testbot', -> RoundUrlPrefix.set 'https://moliday.holasses/round'
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Elliptic Curve is a new round'
-      waitForDocument model.Rounds, { name: 'Elliptic Curve' },
+      waitForDocument Rounds, { name: 'Elliptic Curve' },
         canon: 'elliptic_curve'
         created: 7
         created_by: 'torgen'
@@ -866,12 +861,12 @@ describe 'codex hubot script', ->
     it 'creates round with specified link', ->
       RoundUrlPrefix.ensure()
       impersonating 'testbot', -> RoundUrlPrefix.set 'https://moliday.holasses/round'
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot Elliptic Curve is a new round with link https://moliday.holasses/circular'
-      waitForDocument model.Rounds, { name: 'Elliptic Curve' },
+      waitForDocument Rounds, { name: 'Elliptic Curve' },
         canon: 'elliptic_curve'
         created: 7
         created_by: 'torgen'
@@ -882,16 +877,16 @@ describe 'codex hubot script', ->
         link: 'https://moliday.holasses/circular'
 
     it 'fails when one exists by that name', ->
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: []
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot elliptic curve is a new round'
-      await waitForDocument model.Messages, {body: $regex: /@torgen: There's already.*a round named Elliptic Curve/},
+      await waitForDocument Messages, {body: $regex: /@torgen: There's already.*a round named Elliptic Curve/},
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
@@ -900,48 +895,48 @@ describe 'codex hubot script', ->
 
   describe 'deleteRound', ->
     it 'deletes empty round', ->
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: []
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot delete round elliptic curve'
-      await waitForDocument model.Messages, { body: '@torgen: Okay, I deleted round "Elliptic Curve".' },
+      await waitForDocument Messages, { body: '@torgen: Okay, I deleted round "Elliptic Curve".' },
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
         useful: true
         mention: ['torgen']
-      chai.assert.isUndefined model.Rounds.findOne _id: rid
+      chai.assert.isUndefined Rounds.findOne _id: rid
 
     it 'fails when round contains puzzles', ->
-      rid = model.Rounds.insert
+      rid = Rounds.insert
         name: 'Elliptic Curve'
         canon: 'elliptic_curve'
         puzzles: ['1']
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot delete round elliptic curve'
-      await waitForDocument model.Messages, { body: '@torgen: Couldn\'t delete round. (Are there still puzzles in it?)' },
+      await waitForDocument Messages, { body: '@torgen: Couldn\'t delete round. (Are there still puzzles in it?)' },
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
         useful: true
         mention: ['torgen']
-      chai.assert.isObject model.Rounds.findOne _id: rid
+      chai.assert.isObject Rounds.findOne _id: rid
 
     it 'fails when round does not exist', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot delete round elliptic curve'
-      waitForDocument model.Messages, { body: '@torgen: I can\'t find a round called "elliptic curve".' },
+      waitForDocument Messages, { body: '@torgen: I can\'t find a round called "elliptic curve".' },
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
@@ -951,17 +946,17 @@ describe 'codex hubot script', ->
   describe 'setTag', ->
     describe 'in puzzle room', ->
       it 'infers puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot set Color to blue'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -969,22 +964,22 @@ describe 'codex hubot script', ->
             value: 'blue'
 
       it 'allows specifying puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Puzzles.insert
+        Puzzles.insert
           _id: 'fghij67890'
           name: 'Even This Poem'
           canon: 'even_this_poem'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/fghij67890'
           timestamp: Date.now()
           body: 'bot set Color for latino alphabet to blue'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -992,22 +987,22 @@ describe 'codex hubot script', ->
             value: 'blue'
 
       it 'allows specifying round', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot set Color for elliptic curve to blue'
-        waitForDocument model.Rounds, {_id: 'fghij67890', 'tags.color.value': 'blue' },
+        waitForDocument Rounds, {_id: 'fghij67890', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -1016,17 +1011,17 @@ describe 'codex hubot script', ->
             
     describe 'in round room', ->
       it 'infers round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/fghij67890'
           timestamp: Date.now()
           body: 'bot set Color to blue'
-        waitForDocument model.Rounds, {_id: 'fghij67890', 'tags.color.value': 'blue' },
+        waitForDocument Rounds, {_id: 'fghij67890', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -1034,22 +1029,22 @@ describe 'codex hubot script', ->
             value: 'blue'
             
       it 'allows specifying puzzle', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags: {}
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/fghij67890'
           timestamp: Date.now()
           body: 'bot set Color for latino alphabet to blue'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -1057,22 +1052,22 @@ describe 'codex hubot script', ->
             value: 'blue'
 
       it 'allows specifying round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags: {}
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/fghij67890'
           timestamp: Date.now()
           body: 'bot set Color of latino alphabet to blue'
-        waitForDocument model.Rounds, {_id: '12345abcde', 'tags.color.value': 'blue' },
+        waitForDocument Rounds, {_id: '12345abcde', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -1081,41 +1076,41 @@ describe 'codex hubot script', ->
 
     describe 'in general room', ->
       it 'fails when target is not specified', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot set Color to blue'
-        waitForDocument model.Messages, {body: '@torgen: You need to tell me which puzzle this is for.'},
+        waitForDocument Messages, {body: '@torgen: You need to tell me which puzzle this is for.'},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7
           mention: ['torgen']
 
       it 'fails when target does not exist', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot set Color for latino alphabet to blue'
-        waitForDocument model.Messages, {body: '@torgen: I can\'t find anything called "latino alphabet".'},
+        waitForDocument Messages, {body: '@torgen: I can\'t find anything called "latino alphabet".'},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7
           mention: ['torgen']
 
       it 'allows specifying puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot set Color for latino alphabet to blue'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -1123,17 +1118,17 @@ describe 'codex hubot script', ->
             value: 'blue'
 
       it 'allows specifying round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot set Color for latino alphabet to blue'
-        waitForDocument model.Rounds, {_id: '12345abcde', 'tags.color.value': 'blue' },
+        waitForDocument Rounds, {_id: '12345abcde', 'tags.color.value': 'blue' },
           tags: color:
             name: 'Color'
             touched_by: 'torgen'
@@ -1143,72 +1138,72 @@ describe 'codex hubot script', ->
   describe 'deleteTag', ->
     describe 'in puzzle room', ->
       it 'infers puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot unset Color'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
 
       it 'allows specifying puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags:
             color:
               value: 'blue'
-        model.Puzzles.insert
+        Puzzles.insert
           _id: 'fghij67890'
           name: 'Even This Poem'
           canon: 'even_this_poem'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/fghij67890'
           timestamp: Date.now()
           body: 'bot unset Color for latino alphabet'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
 
       it 'allows specifying round', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot unset Color for elliptic curve'
-        waitForDocument model.Rounds, {_id: 'fghij67890', 'tags.color': $exists: false }, {}
+        waitForDocument Rounds, {_id: 'fghij67890', 'tags.color': $exists: false }, {}
 
       it 'complains if not set ', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot unset Color'
-        waitForDocument model.Messages, {body: '@torgen: Latino Alphabet didn\'t have Color set!'},
+        waitForDocument Messages, {body: '@torgen: Latino Alphabet didn\'t have Color set!'},
           nick: 'testbot'
           room_name: 'puzzles/12345abcde'
           timestamp: 7
@@ -1216,72 +1211,72 @@ describe 'codex hubot script', ->
             
     describe 'in round room', ->
       it 'infers round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/fghij67890'
           timestamp: Date.now()
           body: 'bot unset Color'
-        waitForDocument model.Rounds, {_id: 'fghij67890', 'tags.color': $exists: false }, {}
+        waitForDocument Rounds, {_id: 'fghij67890', 'tags.color': $exists: false }, {}
             
       it 'allows specifying puzzle', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags: {}
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/fghij67890'
           timestamp: Date.now()
           body: 'bot unset Color for latino alphabet'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
 
       it 'allows specifying round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: 'fghij67890'
           name: 'Elliptic Curve'
           canon: 'elliptic_curve'
           tags: {}
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/fghij67890'
           timestamp: Date.now()
           body: 'bot unset Color of latino alphabet'
-        waitForDocument model.Rounds, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+        waitForDocument Rounds, {_id: '12345abcde', 'tags.color': $exists: false }, {}
       
       it 'complains if not set ', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/12345abcde'
           timestamp: Date.now()
           body: 'bot unset Color'
-        waitForDocument model.Messages, {body: '@torgen: Latino Alphabet didn\'t have Color set!'},
+        waitForDocument Messages, {body: '@torgen: Latino Alphabet didn\'t have Color set!'},
           nick: 'testbot'
           room_name: 'rounds/12345abcde'
           timestamp: 7
@@ -1289,73 +1284,73 @@ describe 'codex hubot script', ->
 
     describe 'in general room', ->
       it 'fails when target is not specified', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unset Color'
-        waitForDocument model.Messages, {body: '@torgen: You need to tell me which puzzle this is for.'},
+        waitForDocument Messages, {body: '@torgen: You need to tell me which puzzle this is for.'},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7
           mention: ['torgen']
 
       it 'fails when target does not exist', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unset Color for latino alphabet'
-        waitForDocument model.Messages, {body: '@torgen: I can\'t find anything called "latino alphabet".'},
+        waitForDocument Messages, {body: '@torgen: I can\'t find anything called "latino alphabet".'},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7
           mention: ['torgen']
 
       it 'allows specifying puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unset Color for latino alphabet'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.color': $exists: false }, {}
 
       it 'allows specifying round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags:
             color:
               value: 'blue'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unset Color for latino alphabet'
-        waitForDocument model.Rounds, {_id: '12345abcde', 'tags.color': $exists: false }, {}
+        waitForDocument Rounds, {_id: '12345abcde', 'tags.color': $exists: false }, {}
 
   describe 'stuck', ->
     describe 'in puzzle room', ->
       it 'marks stuck without reason', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot stuck'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck' },
           tags: status:
             name: 'Status'
             touched_by: 'torgen'
@@ -1363,17 +1358,17 @@ describe 'codex hubot script', ->
             value: 'Stuck'
 
       it 'marks stuck with reason', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot stuck because maparium is closed'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck: maparium is closed' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck: maparium is closed' },
           tags: status:
             name: 'Status'
             touched_by: 'torgen'
@@ -1381,22 +1376,22 @@ describe 'codex hubot script', ->
             value: 'Stuck: maparium is closed'
 
       it 'allows specifying puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Puzzles.insert
+        Puzzles.insert
           _id: 'fghij67890'
           name: 'Even This Poem'
           canon: 'even_this_poem'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot stuck on even this poem because maparium is closed'
-        waitForDocument model.Puzzles, {_id: 'fghij67890', 'tags.status.value': 'Stuck: maparium is closed' },
+        waitForDocument Puzzles, {_id: 'fghij67890', 'tags.status.value': 'Stuck: maparium is closed' },
           tags: status:
             name: 'Status'
             touched_by: 'torgen'
@@ -1405,17 +1400,17 @@ describe 'codex hubot script', ->
             
     describe 'in general room', ->
       it 'marks stuck without reason', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot stuck on latino alphabet'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck' },
           tags: status:
             name: 'Status'
             touched_by: 'torgen'
@@ -1423,17 +1418,17 @@ describe 'codex hubot script', ->
             value: 'Stuck'
 
       it 'marks stuck with reason', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot stuck on latino alphabet because maparium is closed'
-        waitForDocument model.Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck: maparium is closed' },
+        waitForDocument Puzzles, {_id: '12345abcde', 'tags.status.value': 'Stuck: maparium is closed' },
           tags: status:
             name: 'Status'
             touched_by: 'torgen'
@@ -1441,49 +1436,49 @@ describe 'codex hubot script', ->
             value: 'Stuck: maparium is closed'
 
       it 'fails without puzzle', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot stuck because maparium is closed'
-        waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+        waitForDocument Messages, {nick: 'testbot', timestamp: 7},
           body: '@torgen: You need to tell me which puzzle this is for.'
           room_name: 'general/0'
           useful: true
           mention: ['torgen']
 
       it 'fails on round', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot stuck on latino alphabet because maparium is closed'
-        await waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+        await waitForDocument Messages, {nick: 'testbot', timestamp: 7},
           body: '@torgen: I don\'t know what "latino alphabet" is.'
           room_name: 'general/0'
           useful: true
           mention: ['torgen']
-        chai.assert.deepInclude model.Rounds.findOne('12345abcde'),
+        chai.assert.deepInclude Rounds.findOne('12345abcde'),
           tags: {}
 
     describe 'in round room', ->
       it 'fails without puzzle', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/12345abcde'
           timestamp: Date.now()
           body: 'bot stuck because maparium is closed'
-        waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+        waitForDocument Messages, {nick: 'testbot', timestamp: 7},
           body: '@torgen: Only puzzles can be stuck.'
           room_name: 'rounds/12345abcde'
           useful: true
@@ -1492,7 +1487,7 @@ describe 'codex hubot script', ->
   describe 'unstuck', ->
     describe 'in puzzle room', ->
       it 'marks unstuck', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
@@ -1502,19 +1497,19 @@ describe 'codex hubot script', ->
               value: 'Stuck'
               touched: 6
               touched_by: 'torgen'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot unstuck'
-        await waitForDocument model.Messages, {nick: 'torgen', room_name: 'puzzles/12345abcde', action: true},
+        await waitForDocument Messages, {nick: 'torgen', room_name: 'puzzles/12345abcde', action: true},
           body: 'no longer needs help getting unstuck'
           timestamp: 7
-        chai.assert.deepInclude model.Puzzles.findOne('12345abcde'),
+        chai.assert.deepInclude Puzzles.findOne('12345abcde'),
           tags: {}
         
       it 'is here to help', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
@@ -1524,19 +1519,19 @@ describe 'codex hubot script', ->
               value: 'Stuck'
               touched: 6
               touched_by: 'cjb'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/12345abcde'
           timestamp: Date.now()
           body: 'bot unstuck'
-        await waitForDocument model.Messages, {nick: 'torgen', room_name: 'puzzles/12345abcde', action: true},
+        await waitForDocument Messages, {nick: 'torgen', room_name: 'puzzles/12345abcde', action: true},
           body: 'has arrived to help'
           timestamp: 7
-        chai.assert.deepInclude model.Puzzles.findOne('12345abcde'),
+        chai.assert.deepInclude Puzzles.findOne('12345abcde'),
           tags: {}
 
       it 'allows specifying puzzle', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
@@ -1546,23 +1541,23 @@ describe 'codex hubot script', ->
               value: 'Stuck'
               touched: 6
               touched_by: 'cjb'
-        model.Puzzles.insert
+        Puzzles.insert
           _id: 'fghij67890'
           name: 'Even This Poem'
           canon: 'even_this_poem'
           tags: {}
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'puzzles/fghij67890'
           timestamp: Date.now()
           body: 'bot unstuck on latino alphabet'
-        waitForDocument model.Puzzles, {_id: '12345abcde', tags: {}},
+        waitForDocument Puzzles, {_id: '12345abcde', tags: {}},
           touched: 7
           touched_by: 'torgen'
 
     describe 'in general room', ->
       it 'marks unstuck', ->
-        model.Puzzles.insert
+        Puzzles.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
@@ -1572,34 +1567,34 @@ describe 'codex hubot script', ->
               value: 'Stuck'
               touched: 6
               touched_by: 'cjb'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unstuck on latino alphabet'
-        waitForDocument model.Puzzles, {_id: '12345abcde', tags: {}},
+        waitForDocument Puzzles, {_id: '12345abcde', tags: {}},
           touched: 7
           touched_by: 'torgen'
 
       it 'fails without puzzle', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unstuck'
-        waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+        waitForDocument Messages, {nick: 'testbot', timestamp: 7},
           body: '@torgen: You need to tell me which puzzle this is for.'
           room_name: 'general/0'
           useful: true
           mention: ['torgen']
 
       it 'fails when no such puzzle', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot unstuck on latino alphabet'
-        waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+        waitForDocument Messages, {nick: 'testbot', timestamp: 7},
           body: '@torgen: I don\'t know what "latino alphabet" is.'
           room_name: 'general/0'
           useful: true
@@ -1607,7 +1602,7 @@ describe 'codex hubot script', ->
 
     describe 'in round room', ->
       it 'fails without puzzle', ->
-        model.Rounds.insert
+        Rounds.insert
           _id: '12345abcde'
           name: 'Latino Alphabet'
           canon: 'latino_alphabet'
@@ -1617,12 +1612,12 @@ describe 'codex hubot script', ->
               value: 'Stuck'
               touched: 6
               touched_by: 'cjb'
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'rounds/12345abcde'
           timestamp: Date.now()
           body: 'bot unstuck'
-        waitForDocument model.Messages, {nick: 'testbot', timestamp: 7},
+        waitForDocument Messages, {nick: 'testbot', timestamp: 7},
           body: '@torgen: Only puzzles can be stuck.'
           room_name: 'rounds/12345abcde'
           useful: true
@@ -1630,12 +1625,12 @@ describe 'codex hubot script', ->
 
   describe 'poll', ->
     it 'creates poll', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot poll "Who you got?" us "the field"'
-      poll = await waitForDocument model.Polls, {},
+      poll = await waitForDocument Polls, {},
         question: 'Who you got?'
         created: 7
         created_by: 'torgen'
@@ -1644,18 +1639,18 @@ describe 'codex hubot script', ->
           { canon: 'the_field', option: 'the field' }
         ]
         votes: {}
-      await waitForDocument model.Messages, {poll: poll._id},
+      await waitForDocument Messages, {poll: poll._id},
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: 7
 
     it 'requires two options', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot poll "Vote for me!" OK'
-      waitForDocument model.Messages, {body: '@torgen: Must have between 2 and 5 options.' },
+      waitForDocument Messages, {body: '@torgen: Must have between 2 and 5 options.' },
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
@@ -1663,12 +1658,12 @@ describe 'codex hubot script', ->
         mention: ['torgen']
 
     it 'forbids more than five options', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot poll "Best dwarf" Grumpy Happy Sleepy Sneezy Dopey Bashful Doc'
-      waitForDocument model.Messages, {body: '@torgen: Must have between 2 and 5 options.' },
+      waitForDocument Messages, {body: '@torgen: Must have between 2 and 5 options.' },
         nick: 'testbot'
         timestamp: 7
         room_name: 'general/0'
@@ -1678,13 +1673,13 @@ describe 'codex hubot script', ->
   describe 'global list', ->
     it 'lists global settings', ->
       v.ensure() for k, v of all_settings
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot global list'
       for k, v of all_settings
-        await waitForDocument model.Messages, {nick: 'testbot', to: 'torgen', body: new RegExp "^#{v.name}:"},
+        await waitForDocument Messages, {nick: 'testbot', to: 'torgen', body: new RegExp "^#{v.name}:"},
           room_name: 'general/0'
           timestamp: 7
           useful: true
@@ -1693,12 +1688,12 @@ describe 'codex hubot script', ->
     beforeEach -> v.ensure() for k, v of all_settings
 
     it 'sets number', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot global set maximum meme length to 97'
-      await waitForDocument model.Messages, {body: '@torgen: OK, set maximum meme length to 97'},
+      await waitForDocument Messages, {body: '@torgen: OK, set maximum meme length to 97'},
         nick: 'testbot'
         room_name: 'general/0'
         timestamp: 7
@@ -1707,12 +1702,12 @@ describe 'codex hubot script', ->
       chai.assert.equal 97, MaximumMemeLength.get()
 
     it 'sets boolean', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot global set embed puzzles to false'
-      await waitForDocument model.Messages, {body: '@torgen: OK, set embed puzzles to false'},
+      await waitForDocument Messages, {body: '@torgen: OK, set embed puzzles to false'},
         nick: 'testbot'
         room_name: 'general/0'
         timestamp: 7
@@ -1721,12 +1716,12 @@ describe 'codex hubot script', ->
       chai.assert.isFalse EmbedPuzzles.get()
 
     it 'sets url', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot global set round url prefix to https://moliday.holasses/round'
-      await waitForDocument model.Messages, {body: '@torgen: OK, set round url prefix to https://moliday.holasses/round'},
+      await waitForDocument Messages, {body: '@torgen: OK, set round url prefix to https://moliday.holasses/round'},
         nick: 'testbot'
         room_name: 'general/0'
         timestamp: 7
@@ -1735,12 +1730,12 @@ describe 'codex hubot script', ->
       chai.assert.equal 'https://moliday.holasses/round', RoundUrlPrefix.get()
 
     it 'fails when setting does not exist', ->
-      model.Messages.insert
+      Messages.insert
         nick: 'torgen'
         room_name: 'general/0'
         timestamp: Date.now()
         body: 'bot global set background color to black'
-      waitForDocument model.Messages, {body: '@torgen: Sorry, I don\'t know the setting \'background color\'.'},
+      waitForDocument Messages, {body: '@torgen: Sorry, I don\'t know the setting \'background color\'.'},
         nick: 'testbot'
         room_name: 'general/0'
         timestamp: 7
@@ -1749,12 +1744,12 @@ describe 'codex hubot script', ->
 
     describe 'when value has wrong format for setting', ->
       it 'fails for boolean', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot global set embed puzzles to maybe'
-        await waitForDocument model.Messages, {body: /^@torgen: Sorry, there was an error:/},
+        await waitForDocument Messages, {body: /^@torgen: Sorry, there was an error:/},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7
@@ -1763,12 +1758,12 @@ describe 'codex hubot script', ->
         chai.assert.isTrue EmbedPuzzles.get()
 
       it 'fails for url', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot global set round url prefix to twelve'
-        await waitForDocument model.Messages, {body: /^@torgen: Sorry, there was an error:/},
+        await waitForDocument Messages, {body: /^@torgen: Sorry, there was an error:/},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7
@@ -1777,12 +1772,12 @@ describe 'codex hubot script', ->
         chai.assert.equal '', RoundUrlPrefix.get()
 
       it 'fails for number', ->
-        model.Messages.insert
+        Messages.insert
           nick: 'torgen'
           room_name: 'general/0'
           timestamp: Date.now()
           body: 'bot global set maximum meme length to twelve'
-        await waitForDocument model.Messages, {body: /^@torgen: Sorry, there was an error:/},
+        await waitForDocument Messages, {body: /^@torgen: Sorry, there was an error:/},
           nick: 'testbot'
           room_name: 'general/0'
           timestamp: 7

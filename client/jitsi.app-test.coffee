@@ -1,10 +1,13 @@
 'use strict'
 
 import {waitForSubscriptions, waitForMethods, afterFlushPromise, promiseCall, login, logout} from './imports/app_test_helpers.coffee'
+import Router from '/client/imports/router.coffee'
 import jitsiModule from './imports/jitsi.coffee'
 import chai from 'chai'
 import sinon from 'sinon'
 import {reactiveLocalStorage} from './imports/storage.coffee'
+import { CLIENT_UUID } from '/client/imports/server_settings.coffee'
+import { Puzzles } from '/lib/imports/collections.coffee'
 
 GRAVATAR_200 = 'https://secure.gravatar.com/avatar/a24f643d34150c3b4053989db38251c9.jpg?d=wavatar&s=200'
 
@@ -40,7 +43,7 @@ describe 'jitsi', ->
     mock = expectFactory()
     onceExp = mock.expects('once').twice()
 
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
@@ -58,21 +61,21 @@ describe 'jitsi', ->
 
   it 'shares meeting between blackboard and edit', ->
     mock = expectFactory()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
-    share.Router.EditPage()
+    Router.EditPage()
     await afterFlushPromise()
     chai.assert.equal factory.callCount, 1
 
   it 'shares meeting between blackboard and logistics', ->
     mock = expectFactory()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
-    await share.Router.LogisticsPage()
+    await Router.LogisticsPage()
     await waitForSubscriptions()
     await afterFlushPromise()
     chai.assert.equal factory.callCount, 1
@@ -80,7 +83,7 @@ describe 'jitsi', ->
   it 'joins new meeting when moving from blackboard to puzzle', ->
     mock1 = expectFactory()
     dispose1 = mock1.expects('dispose').never()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
@@ -89,8 +92,8 @@ describe 'jitsi', ->
     mock2 = expectFactory()
     onceExp = mock2.expects('once').twice()
     dispose2 = mock2.expects('dispose').never()
-    puzz = share.model.Puzzles.findOne name: 'In Memoriam'
-    share.Router.PuzzlePage puzz._id
+    puzz = Puzzles.findOne name: 'In Memoriam'
+    Router.PuzzlePage puzz._id
     await afterFlushPromise()
     await waitForSubscriptions()
     dispose1.verify()
@@ -107,14 +110,14 @@ describe 'jitsi', ->
   it 'stays in meeting when pinned', ->
     mock1 = expectFactory()
     dispose1 = mock1.expects('dispose').never()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
     $('.bb-jitsi-pin').click()
     await afterFlushPromise()
-    puzz = share.model.Puzzles.findOne name: 'In Memoriam'
-    share.Router.PuzzlePage puzz._id
+    puzz = Puzzles.findOne name: 'In Memoriam'
+    Router.PuzzlePage puzz._id
     await afterFlushPromise()
     await waitForSubscriptions()
     dispose1.verify()
@@ -128,7 +131,7 @@ describe 'jitsi', ->
     mock1 = expectFactory()
     on1 = mock1.expects('once').twice()
     dispose1 = mock1.expects('dispose').never()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
@@ -142,8 +145,8 @@ describe 'jitsi', ->
       return false
     await afterFlushPromise()
     dispose1.verify()
-    puzz = share.model.Puzzles.findOne name: 'In Memoriam'
-    share.Router.PuzzlePage puzz._id
+    puzz = Puzzles.findOne name: 'In Memoriam'
+    Router.PuzzlePage puzz._id
     await afterFlushPromise()
     await waitForSubscriptions()
     mock2 = expectFactory()
@@ -153,7 +156,7 @@ describe 'jitsi', ->
   it 'disposes when another tab joins meeting', ->
     mock1 = expectFactory()
     dispose1 = mock1.expects('dispose').never()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
@@ -163,8 +166,8 @@ describe 'jitsi', ->
       reactiveLocalStorage.setItem 'jitsiTabUUID', Random.id()
       await afterFlushPromise()
       dispose1.verify()
-      puzz = share.model.Puzzles.findOne name: 'In Memoriam'
-      share.Router.PuzzlePage puzz._id
+      puzz = Puzzles.findOne name: 'In Memoriam'
+      Router.PuzzlePage puzz._id
       await afterFlushPromise()
       await waitForSubscriptions()
     finally
@@ -172,19 +175,19 @@ describe 'jitsi', ->
 
   it 'join button clobbers other tab', ->
     reactiveLocalStorage.setItem 'jitsiTabUUID', Random.id()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()
     mock = expectFactory()
     $('.bb-join-jitsi').click()
     await afterFlushPromise()
-    chai.assert.equal reactiveLocalStorage.getItem('jitsiTabUUID'), share.settings.CLIENT_UUID
+    chai.assert.equal reactiveLocalStorage.getItem('jitsiTabUUID'), CLIENT_UUID
 
   it 'doesn\'t rejoin when mute preference changes', ->
     mock1 = expectFactory()
     dispose1 = mock1.expects('dispose').never()
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await defaultLogin()
     await afterFlushPromise()
     await waitForSubscriptions()

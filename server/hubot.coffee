@@ -1,13 +1,15 @@
 # Start a hubot, connected to our chat room.
 'use strict'
 
-return unless share.DO_BATCH_PROCESSING
-
+import { scripts } from '/server/imports/botutil.coffee'
+import { DO_BATCH_PROCESSING } from '/server/imports/batch.coffee'
 import Robot from './imports/hubot.coffee'
 import hubot_help from 'hubot-help'
 # Required so external hubot scripts written in coffeescript can be loaded
 # dynamically.
 import 'coffeescript/register'
+
+return unless DO_BATCH_PROCESSING
 
 # Log messages?
 DEBUG = !Meteor.isProduction
@@ -23,9 +25,9 @@ Meteor.startup ->
   # register scripts
   robot.privately hubot_help
   robot.loadExternalScripts EXTERNAL_SCRIPTS
-  delete share.hubot[script] for script in SKIP_SCRIPTS
-  Object.keys(share.hubot).forEach (scriptName) ->
-    console.log "Loading hubot script: #{scriptName}"
-    share.hubot[scriptName](robot)
+  for name, script of scripts
+    continue if name in SKIP_SCRIPTS
+    console.log "Loading hubot script: #{name}"
+    script(robot)
   
   robot.run()

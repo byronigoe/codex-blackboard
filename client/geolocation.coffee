@@ -4,9 +4,7 @@ import canonical from '../lib/imports/canonical.coffee'
 import { lat, lng, distance } from './imports/location.coffee'
 import botuser from './imports/botuser.coffee'
 import keyword_or_positional from './imports/keyword_or_positional.coffee'
-
-model = share.model # import
-settings = share.settings # import
+import isVisible from '/client/imports/visible.coffee'
 
 # Geolocation-related utilities
 
@@ -30,8 +28,7 @@ updateLocation = do ->
 
 # As long as the user is logged in, stream position updates to server
 Tracker.autorun ->
-  return if settings.DISABLE_GEOLOCATION
-  Geolocation.setPaused !share.isVisible()
+  Geolocation.setPaused !isVisible()
   nick = Meteor.userId()
   return unless nick?
   pos = Geolocation.latLng(enableHighAccuracy:false)
@@ -50,7 +47,7 @@ distanceTo = (nick) ->
   return null unless n? and n.located_at?
   return distance(n.located_at, p)
 
-isNickNear = share.isNickNear = (nick) ->
+isNickNear = (nick) ->
   return true if canonical(nick) is Meteor.userId() # that's me!
   dist = distanceTo(nick)
   return false unless dist?

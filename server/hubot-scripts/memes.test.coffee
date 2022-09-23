@@ -1,7 +1,7 @@
 'use strict'
 
-import './000setup.coffee'  # for side effects
-import './memes.coffee' # for side effects
+import memes from './memes.coffee' # for side effects
+import { Messages } from '/lib/imports/collections.coffee'
 import chai from 'chai'
 import sinon from 'sinon'
 import { resetDatabase } from 'meteor/xolvio:cleaner'
@@ -10,8 +10,6 @@ import { waitForDocument } from '/lib/imports/testutils.coffee'
 import { MaximumMemeLength } from '/lib/imports/settings.coffee'
 import delay from 'delay'
 import { impersonating } from '../imports/impersonate.coffee'
-
-model = share.model
 
 describe 'memes hubot script', ->
   robot = null
@@ -26,7 +24,7 @@ describe 'memes hubot script', ->
     # can't use plain hubot because this script uses priv, which isn't part of
     # the standard message class or adapter.
     robot = new Robot 'testbot', 'testbot@testbot.test'
-    share.hubot.memes robot
+    memes robot
     robot.run()
     clock.tick 1
 
@@ -35,31 +33,31 @@ describe 'memes hubot script', ->
     clock.restore()
 
   it 'triggers multiple memes', ->
-    model.Messages.insert
+    Messages.insert
       nick: 'torgen'
       room_name: 'general/0'
       timestamp: 7
       body: 'I don\'t always trigger all the meme templates, but when I do, I nailed it everywhere'
-    interesting = waitForDocument model.Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/interesting/},
+    interesting = waitForDocument Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/interesting/},
       room_name: 'general/0'
       timestamp: 7
-    buzz = waitForDocument model.Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/buzz/},
+    buzz = waitForDocument Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/buzz/},
       room_name: 'general/0'
       timestamp: 7
-    xy = waitForDocument model.Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/xy/},
+    xy = waitForDocument Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/xy/},
       room_name: 'general/0'
       timestamp: 7
-    success = waitForDocument model.Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/success/},
+    success = waitForDocument Messages, {nick: 'testbot', body: /https:\/\/memegen.link\/success/},
       room_name: 'general/0'
       timestamp: 7
     Promise.all [interesting, buzz, xy, success]
 
   it 'maximum lemgth applies', ->
     impersonating 'cjb', -> MaximumMemeLength.set 50
-    model.Messages.insert
+    Messages.insert
       nick: 'torgen'
       room_name: 'general/0'
       timestamp: 7
       body: 'I don\'t always trigger all the meme templates, but when I do, I nailed it everywhere'
     await delay 200
-    chai.assert.isUndefined model.Messages.findOne nick: 'testbot', timestamp: 7
+    chai.assert.isUndefined Messages.findOne nick: 'testbot', timestamp: 7

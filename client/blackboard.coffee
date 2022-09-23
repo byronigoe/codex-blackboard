@@ -1,11 +1,15 @@
 'use strict'
 
 import canonical from '/lib/imports/canonical.coffee'
+import { getTag, isStuck } from '/lib/imports/tags.coffee'
+import { LastAnswer, Presence, Puzzles, Rounds } from '/lib/imports/collections.coffee'
 import { confirm } from '/client/imports/modal.coffee'
 import { findByChannel } from '/client/imports/presence_index.coffee'
 import { jitsiUrl } from './imports/jitsi.coffee'
 import puzzleColor  from './imports/objectColor.coffee'
 import { HIDE_SOLVED, HIDE_SOLVED_FAVES, HIDE_SOLVED_METAS, MUTE_SOUND_EFFECTS, SORT_REVERSE, VISIBLE_COLUMNS } from './imports/settings.coffee'
+import { TEAM_NAME, WHOSE_GITHUB } from '/client/imports/server_settings.coffee'
+import * as notification from '/client/imports/notification.coffee'
 import { reactiveLocalStorage } from './imports/storage.coffee'
 import PuzzleDrag from './imports/puzzle_drag.coffee'
 import okCancelEvents from './imports/ok_cancel_events.coffee'
@@ -16,9 +20,6 @@ import '/client/imports/ui/components/edit_object_title/edit_object_title.coffee
 import '/client/imports/ui/components/fix_puzzle_drive/fix_puzzle_drive.coffee'
 import '/client/imports/ui/components/onduty/control.coffee'
 import '/client/imports/ui/components/tag_table_rows/tag_table_rows.coffee'
-
-model = share.model # import
-settings = share.settings # import
 
 SOUND_THRESHOLD_MS = 30*1000 # 30 seconds
 
@@ -35,7 +36,7 @@ Meteor.startup ->
   # page the user is currently on.  This is "fun".  Trust us...
   Meteor.subscribe 'last-answered-puzzle'
   # ignore added; that's just the startup state.  Watch 'changed'
-  model.LastAnswer.find({}).observe
+  LastAnswer.find({}).observe
     changed: (doc, oldDoc) ->
       return unless doc.target? # 'no recent puzzle was solved'
       return if doc.target is oldDoc.target # answer changed, not really new
@@ -99,7 +100,7 @@ Template.blackboard.onCreated ->
     if not foundAccounts?
       @foundPuzzles.set null
       return
-    p = model.Presence.find
+    p = Presence.find
       nick: $in: [...foundAccounts]
       scope: $in: ['chat', 'jitsi']
     res = new Set
@@ -119,10 +120,10 @@ Template.blackboard.onRendered ->
       return item
 
 Template.blackboard.helpers
-  whoseGitHub: -> settings.WHOSE_GITHUB
+  whoseGitHub: -> WHOSE_GITHUB
   filter: -> Template.instance().userSearch.get()?
   searchResults: ->
-    model.Puzzles.findOne(_id: id) for id from Template.instance().foundPuzzles.get() ? []
+    Puzzles.findOne(_id: id) for id from Template.instance().foundPuzzles.get() ? []
 
 Template.blackboard.events
   'click .puzzle-working .button-group:not(.open) .bb-show-filter-by-user': (event, template) ->
@@ -136,51 +137,39 @@ Template.blackboard.events
     template.userSearch.set null
 
 # Notifications
-notificationStreams = [
-  {name: 'new-puzzles', label: 'New Puzzles'}
-  {name: 'announcements', label: 'Announcements'}
-  {name: 'callins', label: "Call-Ins"}
-  {name: 'answers', label: "Answers"}
-  {name: 'stuck', label: 'Stuck Puzzles'}
-  {name: 'favorite-mechanics', label: 'Favorite Mechanics'}
-  {name: 'private-messages', label: 'Private Messages/Mentions'}
-]
 
 Template.blackboard.helpers
-  notificationStreams: notificationStreams
-  notificationsAsk: ->
-    return false unless Notification?
-    p = Session.get 'notifications'
-    p isnt 'granted' and p isnt 'denied'
-  notificationsEnabled: -> Session.equals 'notifications', 'granted'
-  anyNotificationsEnabled: -> (share.notification.count() > 0)
-  notificationStreamEnabled: (stream) -> share.notification.get stream
+  notificationStreams: notification.streams
+  notificationsAsk: notification.shouldAsk
+  notificationsEnabled: -> notification.granted()
+  anyNotificationsEnabled: -> (notification.count() > 0)
+  notificationStreamEnabled: (stream) -> notification.get stream
 Template.blackboard.events
   "click .bb-notification-ask": (event, template) ->
-    share.notification.ask()
+    notification.ask()
   "click .bb-notification-enabled": (event, template) ->
-    if share.notification.count() > 0
-      for item in notificationStreams
-        share.notification.set(item.name, false)
+    if notification.count() > 0
+      for item in notification.streams
+        notification.set(item.name, false)
     else
-      for item in notificationStreams
-        share.notification.set(item.name) # default value
+      for item in notification.streams
+        notification.set(item.name) # default value
   "click .bb-notification-controls.dropdown-menu a": (event, template) ->
     $inp = $( event.currentTarget ).find( 'input' )
     stream = $inp.attr('data-notification-stream')
-    share.notification.set(stream, !share.notification.get(stream))
+    notification.set(stream, !notification.get(stream))
     $( event.target ).blur()
     return false
   "change .bb-notification-controls [data-notification-stream]": (event, template) ->
-    share.notification.set event.target.dataset.notificationStream, event.target.checked
+    notification.set event.target.dataset.notificationStream, event.target.checked
 
 round_helper = ->
   dir = if SORT_REVERSE.get() then 'desc' else 'asc'
-  model.Rounds.find {}, sort: [["sort_key", dir]]
+  Rounds.find {}, sort: [["sort_key", dir]]
 meta_helper = ->
   # the following is a map() instead of a direct find() to preserve order
   r = for id, index in this.puzzles
-    puzzle = model.Puzzles.findOne({_id: id, puzzles: {$ne: null}})
+    puzzle = Puzzles.findOne({_id: id, puzzles: {$ne: null}})
     continue unless puzzle?
     {
       _id: id
@@ -191,7 +180,7 @@ meta_helper = ->
   return r
 unassigned_helper = ->
   p = for id, index in this.puzzles
-    puzzle = model.Puzzles.findOne({_id: id, feedsInto: {$size: 0}, puzzles: {$exists: false}})
+    puzzle = Puzzles.findOne({_id: id, feedsInto: {$size: 0}, puzzles: {$exists: false}})
     continue unless puzzle?
     { _id: id, parent: @_id, puzzle: puzzle }
   editing = Meteor.userId() and (Session.get 'canEdit')
@@ -211,8 +200,8 @@ Template.blackboard.helpers
     ]
     if not Session.get('canEdit') and (HIDE_SOLVED.get() or HIDE_SOLVED_FAVES.get())
       query.solved = $eq: null
-    model.Puzzles.find query
-  stuckPuzzles: -> model.Puzzles.find
+    Puzzles.find query
+  stuckPuzzles: -> Puzzles.find
     'tags.status.value': /^stuck/i
   hasJitsiLocalStorage: ->
     reactiveLocalStorage.getItem 'jitsiLocalStorage'
@@ -225,23 +214,23 @@ Template.blackboard.helpers
       return wasAdding
 
 Template.blackboard_status_grid.helpers
-  rounds: -> model.Rounds.find {}, sort: [["sort_key", 'asc']]
+  rounds: -> Rounds.find {}, sort: [["sort_key", 'asc']]
   metas: meta_helper
   color: -> puzzleColor @puzzle if @puzzle?
   unassigned: -> 
     for id, index in this.puzzles
-      puzzle = model.Puzzles.findOne({_id: id, feedsInto: {$size: 0}, puzzles: {$exists: false}})
+      puzzle = Puzzles.findOne({_id: id, feedsInto: {$size: 0}, puzzles: {$exists: false}})
       continue unless puzzle?
       puzzle._id
   puzzles: (ps) ->
     p = ({
       _id: id
       puzzle_num: 1 + index
-      puzzle: model.Puzzles.findOne(id) or { _id: id }
+      puzzle: Puzzles.findOne(id) or { _id: id }
     } for id, index in ps)
     return p
   numSolved: (l) -> l.filter((p) -> p.puzzle.solved).length
-  stuck: share.model.isStuck
+  stuck: isStuck
 
 Template.blackboard.onRendered ->
   @escListener = (event) =>
@@ -270,7 +259,7 @@ Template.blackboard.events
 
 Template.blackboard.onRendered ->
   #  page title
-  $("title").text("#{settings.TEAM_NAME} Puzzle Blackboard")
+  $("title").text("#{TEAM_NAME} Puzzle Blackboard")
   $('#bb-tables .bb-puzzle .puzzle-name > a').tooltip placement: 'left'
 
 Template.blackboard.events
@@ -298,13 +287,13 @@ Template.blackboard_round.helpers
   # the following is a map() instead of a direct find() to preserve order
   metas: ->
     r = for id, index in @puzzles
-      puzzle = model.Puzzles.findOne({_id: id, puzzles: {$ne: null}})
+      puzzle = Puzzles.findOne({_id: id, puzzles: {$ne: null}})
       continue unless puzzle?
       {
         _id: id
         puzzle: puzzle
         num_puzzles: puzzle.puzzles.length
-        num_solved: model.Puzzles.find({_id: {$in: puzzle.puzzles}, solved: {$ne: null}}).length
+        num_solved: Puzzles.find({_id: {$in: puzzle.puzzles}, solved: {$ne: null}}).length
       }
     r.reverse() if SORT_REVERSE.get()
     return r
@@ -314,7 +303,7 @@ Template.blackboard_round.helpers
     return true if 'true' is Session.get 'canEdit'
     return true unless HIDE_SOLVED_METAS.get()
     for id, index in @puzzles
-      puzzle = model.Puzzles.findOne({_id: id, solved: {$eq: null}, $or: [{feedsInto: {$size: 0}}, {puzzles: {$ne: null}}]})
+      puzzle = Puzzles.findOne({_id: id, solved: {$eq: null}, $or: [{feedsInto: {$size: 0}}, {puzzles: {$ne: null}}]})
       return true if puzzle?
     return false
   addingTag: ->
@@ -419,27 +408,27 @@ Template.blackboard_meta.helpers
   color: -> puzzleColor @puzzle if @puzzle?
   showMeta: -> !HIDE_SOLVED_METAS.get() or (!this.puzzle?.solved?)
   puzzles: ->
-    puzzle = model.Puzzles.findOne({_id: @_id}, {fields: {order_by: 1, puzzles: 1}})
+    puzzle = Puzzles.findOne({_id: @_id}, {fields: {order_by: 1, puzzles: 1}})
     if puzzle?.order_by
       filter =
         feedsInto: @_id
       if not (Session.get 'canEdit') and HIDE_SOLVED.get()
         filter.solved = $eq: null
-      return model.Puzzles.find filter,
+      return Puzzles.find filter,
         sort: {"#{puzzle.order_by}": 1}
         transform: (p) -> {_id: p._id, puzzle: p}
     p = ({
       _id: id
-      puzzle: model.Puzzles.findOne(id) or { _id: id }
+      puzzle: Puzzles.findOne(id) or { _id: id }
     } for id, index in puzzle?.puzzles or [])
     editing = Meteor.userId() and (Session.get 'canEdit')
     return p if editing or !HIDE_SOLVED.get()
     p.filter (pp) -> !pp.puzzle.solved?
-  stuck: share.model.isStuck
+  stuck: isStuck
   numHidden: ->
     return 0 unless HIDE_SOLVED.get()
     y = for id, index in @puzzle.puzzles
-      x = model.Puzzles.findOne id
+      x = Puzzles.findOne id
       continue unless x?.solved?
     y.length
   collapsed: -> 'true' is reactiveLocalStorage.getItem "collapsed_meta.#{@puzzle._id}"
@@ -487,17 +476,17 @@ Template.blackboard_puzzle_cells.onCreated ->
 Template.blackboard_puzzle_cells.helpers
   allMetas: ->
     return [] unless @
-    (model.Puzzles.findOne x) for x in @feedsInto
+    (Puzzles.findOne x) for x in @feedsInto
   otherMetas: ->
     parent = Template.parentData(2)
     return unless parent.puzzle
     return unless @feedsInto?
     return if @feedsInto.length < 2
-    return model.Puzzles.find(_id: { $in: @feedsInto, $ne: parent.puzzle._id })
+    return Puzzles.find(_id: { $in: @feedsInto, $ne: parent.puzzle._id })
   isMeta: -> return @puzzles?
   canChangeMeta: -> not @puzzles or @puzzles.length is 0
   unfedMetas: ->
-    return model.Puzzles.find(puzzles: {$exists: true, $ne: @_id})
+    return Puzzles.find(puzzles: {$exists: true, $ne: @_id})
   jitsiLink: ->
     return jitsiUrl "puzzles", @puzzle?._id
   addingTag: ->
@@ -508,14 +497,14 @@ Template.blackboard_puzzle_cells.helpers
     }
 
 Template.blackboard_column_body_answer.helpers
-  answer: -> (model.getTag @puzzle, 'answer') or ''
+  answer: -> (getTag @puzzle, 'answer') or ''
 
 Template.blackboard_column_body_status.helpers
-  status: -> (model.getTag @puzzle, 'status') or ''
+  status: -> (getTag @puzzle, 'status') or ''
   set_by: -> @puzzle?.tags?.status?.touched_by
 
 Template.blackboard_column_body_update.helpers
-  stuck: share.model.isStuck
+  stuck: isStuck
   solverMinutes: ->
     return unless @puzzle.solverTime?
     Math.floor(@puzzle.solverTime / 60000)
@@ -527,7 +516,7 @@ Template.blackboard_column_body_working.helpers
     return [] unless @puzzle?
     return findByChannel "puzzles/#{@puzzle._id}", {}, sort: {jitsi: -1, joined_timestamp: 1}
 
-colorHelper = -> model.getTag @, 'color'
+colorHelper = -> getTag @, 'color'
 
 Template.blackboard_othermeta_link.helpers color: colorHelper
 Template.blackboard_addmeta_entry.helpers color: colorHelper
@@ -539,7 +528,7 @@ Template.blackboard_unfeed_meta.events
 dragdata = null
 
 Template.blackboard_puzzle.helpers
-  stuck: share.model.isStuck
+  stuck: isStuck
 
 Template.blackboard_puzzle.events
   'dragend tr.puzzle': (event, template) ->
@@ -561,7 +550,7 @@ Template.blackboard_column_header_working.onCreated ->
 # Update 'currentTime' every minute or so to allow pretty_ts to magically
 # update
 Meteor.startup ->
-  Session.set "currentTime", model.UTCNow()
+  Session.set "currentTime", Date.now() 
   Meteor.setInterval ->
-    Session.set "currentTime", model.UTCNow()
+    Session.set "currentTime", Date.now()
   , 60*1000

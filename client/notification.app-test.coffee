@@ -1,5 +1,8 @@
 'use strict'
 
+import { Puzzles, Rounds } from '/lib/imports/collections.coffee'
+import * as notification from '/client/imports/notification.coffee'
+import Router from '/client/imports/router.coffee'
 import {waitForMethods, waitForSubscriptions, promiseCall, promiseCallOn, afterFlushPromise, login, logout} from './imports/app_test_helpers.coffee'
 import chai from 'chai'
 import sinon from 'sinon'
@@ -11,7 +14,7 @@ describe 'notifications dropdown', ->
   @timeout 10000
   before ->
     await login('testy', 'Teresa Tybalt', 'fake@artifici.al', 'failphrase')
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
 
   after ->
     logout()
@@ -50,7 +53,7 @@ describe 'notifications', ->
       nickname: 'someoneelse'
       real_name: 'Someone Else'
       password: 'failphrase'
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
   
   after ->
     logout()
@@ -62,7 +65,7 @@ describe 'notifications', ->
     describe name, ->
       mock = null
       beforeEach ->
-        mock = sinon.mock share.notification
+        mock = sinon.mock notification
 
       afterEach ->
         mock.verify()
@@ -71,7 +74,7 @@ describe 'notifications', ->
         v = null
         try
           Session.set 'notifications', 'granted'
-          share.notification.set stream, false
+          notification.set stream, false
           mock.expects('notify').never()
           await afterFlushPromise()
           await waitForSubscriptions()
@@ -85,7 +88,7 @@ describe 'notifications', ->
         v = null
         try
           Session.set 'notifications', 'denied'
-          share.notification.set stream, true
+          notification.set stream, true
           mock.expects('notify').never()
           await afterFlushPromise()
           await waitForSubscriptions()
@@ -94,13 +97,13 @@ describe 'notifications', ->
         finally
           await cleanup(v) if v?
           Session.set 'notifications', 'default'
-          share.notification.set stream, false
+          notification.set stream, false
 
       it 'notifies when enabled', ->
         v = null
         try
           Session.set 'notifications', 'granted'
-          share.notification.set stream, true
+          notification.set stream, true
           notify = mock.expects('notify')
           p = new Promise (resolve) ->
             notify.once().callsFake(-> resolve())
@@ -112,7 +115,7 @@ describe 'notifications', ->
         finally
           await cleanup(v) if v?
           Session.set 'notifications', 'default'
-          share.notification.set stream, false
+          notification.set stream, false
 
   testcase 'starred in main', 'announcements', (-> 'Announcement by someoneelse'), (-> sinon.match({body: 'what\'s up guys', icon: GRAVATAR_192})), ->
     msg = await promiseCallOn other_conn, 'newMessage', body: 'what\'s up guys'
@@ -120,7 +123,7 @@ describe 'notifications', ->
   , ->
 
   testcase 'new puzzle', 'new-puzzles', (-> 'someoneelse'), ((v) -> sinon.match({body: 'Added puzzle Test Notification', icon: GRAVATAR_192, data: url: "/puzzles/#{v}"})), ->
-    round = share.model.Rounds.findOne name: 'Civilization'
+    round = Rounds.findOne name: 'Civilization'
     obj = await promiseCallOn other_conn, 'newPuzzle',
       name: 'Test Notification'
       round: round._id
@@ -134,7 +137,7 @@ describe 'notifications', ->
   , (id) -> promiseCallOn other_conn, 'deleteRound', id
 
   testcase 'new callin', 'callins', (-> 'someoneelse'), (-> sinon.match({body: 'New answer knob submitted for puzzle The Doors Of Cambridge', icon: GRAVATAR_192, data: url: "/logistics"})), ->
-    doors = share.model.Puzzles.findOne name: 'The Doors Of Cambridge'
+    doors = Puzzles.findOne name: 'The Doors Of Cambridge'
     obj = await promiseCallOn other_conn, 'newCallIn',
       target: doors._id
       answer: 'knob'
@@ -142,7 +145,7 @@ describe 'notifications', ->
   , (id) -> promiseCallOn other_conn, 'cancelCallIn', id: id
 
   testcase 'answer', 'answers', (-> 'someoneelse'), ((id)-> sinon.match({body: 'Found an answer (KNOB) to puzzle The Doors Of Cambridge', icon: GRAVATAR_192, data: url: "/puzzles/#{id}"})), ->
-    doors = share.model.Puzzles.findOne name: 'The Doors Of Cambridge'
+    doors = Puzzles.findOne name: 'The Doors Of Cambridge'
     await promiseCallOn other_conn, 'setAnswer',
       target: doors._id
       answer: 'knob'
@@ -151,7 +154,7 @@ describe 'notifications', ->
 
   testcase 'mechanics', 'favorite-mechanics', (-> 'The Doors Of Cambridge'), ((id)-> sinon.match({body: 'Mechanic "Nikoli Variants" added to puzzle "The Doors Of Cambridge"', tag: "#{id}/nikoli_variants", data: url: "/puzzles/#{id}"})), ->
     await promiseCall 'favoriteMechanic', 'nikoli_variants'
-    doors = share.model.Puzzles.findOne name: 'The Doors Of Cambridge'
+    doors = Puzzles.findOne name: 'The Doors Of Cambridge'
     await promiseCallOn other_conn, 'addMechanic', doors._id, 'nikoli_variants'
     return doors._id
   , (id) ->
@@ -159,7 +162,7 @@ describe 'notifications', ->
     promiseCall 'removeMechanic', id, 'nikoli_variants'
 
   testcase 'private message', 'private-messages', (-> 'Private message from someoneelse in Puzzle "The Doors Of Cambridge"'), (({id, rand})-> sinon.match({body: "How you doin #{rand}", icon: GRAVATAR_192, data: url: "/puzzles/#{id}"})), ->
-    doors = share.model.Puzzles.findOne name: 'The Doors Of Cambridge'
+    doors = Puzzles.findOne name: 'The Doors Of Cambridge'
     rand = Random.id()
     await promiseCallOn other_conn, 'newMessage',
       room_name: "puzzles/#{doors._id}"
@@ -169,7 +172,7 @@ describe 'notifications', ->
   , ->
 
   testcase 'mention', 'private-messages', (-> 'Mentioned by someoneelse in Puzzle "The Doors Of Cambridge"'), (({id, rand})-> sinon.match({body: "@testy How you doin #{rand}", icon: GRAVATAR_192, data: url: "/puzzles/#{id}"})), ->
-    doors = share.model.Puzzles.findOne name: 'The Doors Of Cambridge'
+    doors = Puzzles.findOne name: 'The Doors Of Cambridge'
     rand = Random.id()
     await promiseCallOn other_conn, 'newMessage',
       room_name: "puzzles/#{doors._id}"

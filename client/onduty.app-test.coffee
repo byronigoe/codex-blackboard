@@ -1,5 +1,7 @@
 'use strict'
 
+import { Roles } from '/lib/imports/collections.coffee'
+import Router from '/client/imports/router.coffee'
 import {waitForMethods, waitForSubscriptions, promiseCall, promiseCallOn, afterFlushPromise, login, logout} from './imports/app_test_helpers.coffee'
 import {waitForDeletion} from '/lib/imports/testutils.coffee'
 import chai from 'chai'
@@ -13,18 +15,18 @@ describe 'onduty', ->
 
   it 'updates while logged in', ->
     await login('testy', 'Teresa Tybalt', '', 'failphrase')
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await waitForSubscriptions()
     $('[data-onduty="claim"]').click()
     await waitForMethods()
     await afterFlushPromise()
-    chai.assert.deepInclude share.model.Roles.findOne('onduty'),
+    chai.assert.deepInclude Roles.findOne('onduty'),
       holder: 'testy'
     chai.assert.deepInclude Meteor.users.findOne('testy'),
       roles: ['onduty']
     $('[data-onduty="release"]').click()
     await waitForMethods()
-    chai.assert.isNotOk share.model.Roles.findOne('onduty')
+    chai.assert.isNotOk Roles.findOne('onduty')
     chai.assert.doesNotHaveAnyKeys Meteor.users.findOne('testy'), ['roles']
 
   it 'Sends existing value when logged in', ->
@@ -36,13 +38,13 @@ describe 'onduty', ->
     await promiseCallOn other_conn, 'claimOnduty',
       from: null
     await login('testy', 'Teresa Tybalt', '', 'failphrase')
-    share.Router.BlackboardPage()
+    Router.BlackboardPage()
     await waitForSubscriptions()
-    chai.assert.deepInclude share.model.Roles.findOne('onduty'),
+    chai.assert.deepInclude Roles.findOne('onduty'),
       holder: 'incognito'
     chai.assert.deepInclude Meteor.users.findOne('incognito'),
       roles: ['onduty']
-    wait = waitForDeletion share.model.Roles, 'onduty'
+    wait = waitForDeletion Roles, 'onduty'
     await promiseCallOn other_conn, 'releaseOnduty'
     await wait
     chai.assert.doesNotHaveAnyKeys Meteor.users.findOne('incognito'), ['roles']

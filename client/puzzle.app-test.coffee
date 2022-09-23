@@ -1,5 +1,7 @@
 'use strict'
 
+import { CallIns, Puzzles } from '/lib/imports/collections.coffee'
+import Router from '/client/imports/router.coffee'
 import {waitForSubscriptions, waitForMethods, afterFlushPromise, promiseCall, login, logout} from './imports/app_test_helpers.coffee'
 import chai from 'chai'
 
@@ -17,34 +19,34 @@ describe 'puzzle', ->
     id = null
     beforeEach ->
       await waitForSubscriptions()
-      id = share.model.Puzzles.findOne(name: 'Interstellar Spaceship')._id
+      id = Puzzles.findOne(name: 'Interstellar Spaceship')._id
 
     it 'renders puzzle view', ->
-      share.Router.PuzzlePage id, 'puzzle'
+      Router.PuzzlePage id, 'puzzle'
       await waitForSubscriptions()
       await afterFlushPromise()
 
     describe 'in info view', ->
       beforeEach ->
-        share.Router.PuzzlePage id, 'info'
+        Router.PuzzlePage id, 'info'
         await waitForSubscriptions()
         await afterFlushPromise()
 
       it 'allows modifying feeders', ->
         $('.unattached').click()
         await afterFlushPromise()
-        storm = share.model.Puzzles.findOne(name: 'The Brainstorm')
+        storm = Puzzles.findOne(name: 'The Brainstorm')
         $("[data-feeder-id=\"#{storm._id}\"] input").click()
         await waitForMethods()
-        chai.assert.include share.model.Puzzles.findOne(id).puzzles, storm._id
+        chai.assert.include Puzzles.findOne(id).puzzles, storm._id
         $("[data-feeder-id=\"#{storm._id}\"] input").click()
         await waitForMethods()
-        chai.assert.notInclude share.model.Puzzles.findOne(id).puzzles, storm._id
+        chai.assert.notInclude Puzzles.findOne(id).puzzles, storm._id
 
       it 'allows spilling grandfeeders', ->
         $('.grandfeeders').click()
         await afterFlushPromise()
-        doors = share.model.Puzzles.findOne(name: 'The Doors Of Cambridge')
+        doors = Puzzles.findOne(name: 'The Doors Of Cambridge')
         chai.assert.lengthOf $("[data-feeder-id=\"#{doors._id}\"]").get(), 3
 
   describe 'meta', ->
@@ -52,16 +54,16 @@ describe 'puzzle', ->
     id = null
     beforeEach ->
       await waitForSubscriptions()
-      id = share.model.Puzzles.findOne(name: 'Anger')._id
+      id = Puzzles.findOne(name: 'Anger')._id
 
     it 'renders puzzle view', ->
-      share.Router.PuzzlePage id, 'puzzle'
+      Router.PuzzlePage id, 'puzzle'
       await waitForSubscriptions()
       await afterFlushPromise()
 
     describe 'in info view', ->
       beforeEach ->
-        share.Router.PuzzlePage id, 'info'
+        Router.PuzzlePage id, 'info'
         await waitForSubscriptions()
         await afterFlushPromise()
 
@@ -69,33 +71,33 @@ describe 'puzzle', ->
         chai.assert.isNotOk $('.grandfeeders')[0]
 
       it 'has feeders in order', ->
-        chai.assert.deepEqual share.model.Puzzles.findOne(id).puzzles, $('.bb-round-answers tr[data-feeder-id]').map(-> @dataset.feederId).get()
+        chai.assert.deepEqual Puzzles.findOne(id).puzzles, $('.bb-round-answers tr[data-feeder-id]').map(-> @dataset.feederId).get()
 
       it 'allows modifying feeders', ->
         $('.unattached').click()
         await afterFlushPromise()
-        storm = share.model.Puzzles.findOne(name: 'The Brainstorm')
+        storm = Puzzles.findOne(name: 'The Brainstorm')
         $("[data-feeder-id=\"#{storm._id}\"] input").click()
         await waitForMethods()
-        chai.assert.include share.model.Puzzles.findOne(id).puzzles, storm._id
+        chai.assert.include Puzzles.findOne(id).puzzles, storm._id
         $("[data-feeder-id=\"#{storm._id}\"] input").click()
         await waitForMethods()
-        chai.assert.notInclude share.model.Puzzles.findOne(id).puzzles, storm._id
+        chai.assert.notInclude Puzzles.findOne(id).puzzles, storm._id
 
   describe 'leaf', ->
 
     id = null
     beforeEach ->
       await waitForSubscriptions()
-      id = share.model.Puzzles.findOne(name: 'Cross Words')._id
+      id = Puzzles.findOne(name: 'Cross Words')._id
 
     it 'renders puzzle view', ->
-      share.Router.PuzzlePage id, 'puzzle'
+      Router.PuzzlePage id, 'puzzle'
       await waitForSubscriptions()
       await afterFlushPromise()
 
     it 'renders info view', ->
-      share.Router.PuzzlePage id, 'info'
+      Router.PuzzlePage id, 'info'
       await waitForSubscriptions()
       await afterFlushPromise()
 
@@ -104,8 +106,8 @@ describe 'puzzle', ->
     callin = null
     beforeEach ->
       await waitForSubscriptions()
-      id = share.model.Puzzles.findOne(name: 'Cross Words')._id
-      share.Router.PuzzlePage id, 'puzzle'
+      id = Puzzles.findOne(name: 'Cross Words')._id
+      Router.PuzzlePage id, 'puzzle'
       await waitForSubscriptions()
       await afterFlushPromise()
 
@@ -120,7 +122,7 @@ describe 'puzzle', ->
       $('.bb-callin-submit').click()
       await p
       await waitForMethods()
-      callin = share.model.CallIns.findOne({target: id, status: 'pending'})
+      callin = CallIns.findOne({target: id, status: 'pending'})
       chai.assert.deepInclude callin,
         answer: 'grrr'
         callin_type: 'answer'
@@ -136,7 +138,7 @@ describe 'puzzle', ->
       $('.bb-callin-submit').click()
       await p
       await waitForMethods()
-      callin = share.model.CallIns.findOne({target: id, status: 'pending'})
+      callin = CallIns.findOne({target: id, status: 'pending'})
       chai.assert.deepInclude callin,
         answer: 'grrrr'
         callin_type: 'answer'
@@ -152,7 +154,7 @@ describe 'puzzle', ->
       $('.bb-callin-submit').click()
       await p
       await waitForMethods()
-      callin = share.model.CallIns.findOne({target: id, status: 'pending'})
+      callin = CallIns.findOne({target: id, status: 'pending'})
       chai.assert.deepInclude callin,
         answer: 'grrrrr'
         callin_type: 'answer'
@@ -169,7 +171,7 @@ describe 'puzzle', ->
       $('.bb-callin-submit').click()
       await p
       await waitForMethods()
-      callin = share.model.CallIns.findOne({target: id, status: 'pending'})
+      callin = CallIns.findOne({target: id, status: 'pending'})
       chai.assert.deepInclude callin,
         answer: 'grrrrrr'
         callin_type: 'expected callback'
@@ -186,7 +188,7 @@ describe 'puzzle', ->
       $('.bb-callin-submit').click()
       await p
       await waitForMethods()
-      callin = share.model.CallIns.findOne({target: id, status: 'pending'})
+      callin = CallIns.findOne({target: id, status: 'pending'})
       chai.assert.deepInclude callin,
         answer: 'grrrrrrr'
         callin_type: 'message to hq'
@@ -203,7 +205,7 @@ describe 'puzzle', ->
       $('.bb-callin-submit').click()
       await p
       await waitForMethods()
-      callin = share.model.CallIns.findOne({target: id, status: 'pending'})
+      callin = CallIns.findOne({target: id, status: 'pending'})
       chai.assert.deepInclude callin,
         answer: 'grrrrrrrr'
         callin_type: 'interaction request'

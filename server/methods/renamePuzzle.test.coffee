@@ -1,14 +1,13 @@
 'use strict'
 
-# Will access contents via share
+# For side effects
 import '/lib/model.coffee'
-# Test only works on server side; move to /server if you add client tests.
-import { callAs } from '../../server/imports/impersonate.coffee'
+import { Messages, Puzzles } from '/lib/imports/collections.coffee'
+import { drive } from '/lib/imports/environment.coffee'
+import { callAs } from '/server/imports/impersonate.coffee'
 import chai from 'chai'
 import sinon from 'sinon'
 import { resetDatabase } from 'meteor/xolvio:cleaner'
-
-model = share.model
 
 describe 'renamePuzzle', ->
   driveMethods = null
@@ -23,10 +22,6 @@ describe 'renamePuzzle', ->
         spreadId: 'sid'
       renamePuzzle: sinon.spy()
       deletePuzzle: sinon.spy()
-    if share.drive?
-      sinon.stub(share, 'drive').value(driveMethods)
-    else
-      share.drive = driveMethods
 
   afterEach ->
     clock.restore()
@@ -38,7 +33,7 @@ describe 'renamePuzzle', ->
   describe 'when new name is unique', ->
     id = null
     beforeEach ->
-      id = model.Puzzles.insert
+      id = Puzzles.insert
         name: 'Foo'
         canon: 'foo'
         created: 1
@@ -62,15 +57,16 @@ describe 'renamePuzzle', ->
     describe 'when logged in', ->
       ret = null
       beforeEach ->
-        ret = callAs 'renamePuzzle', 'cjb',
-          id: id
-          name: 'Bar'
+        drive.withValue driveMethods, ->
+          ret = callAs 'renamePuzzle', 'cjb',
+            id: id
+            name: 'Bar'
 
       it 'returns true', ->
         chai.assert.isTrue ret
 
       it 'renames puzzle', ->
-        puzzle = model.Puzzles.findOne id
+        puzzle = Puzzles.findOne id
         chai.assert.include puzzle,
           name: 'Bar'
           canon: 'bar'
@@ -81,14 +77,14 @@ describe 'renamePuzzle', ->
         chai.assert.deepEqual driveMethods.renamePuzzle.getCall(0).args, ['Bar', 'fid', 'sid']
 
       it 'oplogs', ->
-        chai.assert.lengthOf model.Messages.find({id: id, type: 'puzzles'}).fetch(), 1
+        chai.assert.lengthOf Messages.find({id: id, type: 'puzzles'}).fetch(), 1
 
   describe 'when puzzle with that name exists', ->
     id1 = null
     id2 = null
     ret = null
     beforeEach ->
-      id1 = model.Puzzles.insert
+      id1 = Puzzles.insert
         name: 'Foo'
         canon: 'foo'
         created: 1
@@ -101,7 +97,7 @@ describe 'renamePuzzle', ->
         drive: 'f1'
         spreadsheet: 's1'
         tags: {}
-      id2 = model.Puzzles.insert
+      id2 = Puzzles.insert
         name: 'Bar'
         canon: 'bar'
         created: 2
@@ -114,22 +110,23 @@ describe 'renamePuzzle', ->
         drive: 'f2'
         spreadsheet: 's2'
         tags: {}
-      ret = callAs 'renamePuzzle', 'cjb',
-        id: id1
-        name: 'Bar'
+      drive.withValue driveMethods, ->
+        ret = callAs 'renamePuzzle', 'cjb',
+          id: id1
+          name: 'Bar'
 
     it 'returns false', ->
       chai.assert.isFalse ret
 
     it 'leaves puzzle unchanged', ->
-      chai.assert.include model.Puzzles.findOne(id1),
+      chai.assert.include Puzzles.findOne(id1),
         name: 'Foo'
         canon: 'foo'
         touched: 1
         touched_by: 'torgen'
 
     it 'doesn\'t oplog', ->
-      chai.assert.lengthOf model.Messages.find({id: {$in: [id1, id2]}, type: 'puzzles'}).fetch(), 0, 'oplogs'
+      chai.assert.lengthOf Messages.find({id: {$in: [id1, id2]}, type: 'puzzles'}).fetch(), 0, 'oplogs'
 
     it 'doesn\'t rename drive', ->
       chai.assert.equal driveMethods.renamePuzzle.callCount, 0

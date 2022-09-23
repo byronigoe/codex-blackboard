@@ -1,4 +1,5 @@
 import { callAs } from '/server/imports/impersonate.coffee'
+import { Roles } from '/lib/imports/collections.coffee'
 
 export class RoleManager
 
@@ -8,16 +9,16 @@ export class RoleManager
       callAs 'releaseOnduty', holder
 
     enqueue = (expires_at) =>
-      now = share.model.UTCNow()
+      now = Date.now()
       if expires_at <= now
         release()
       else
         @timeout = Meteor.setTimeout release, (expires_at - now)
 
-    @handle = share.model.Roles.find({_id: 'onduty'}, {fields: {holder: 1, expires_at: 1}}).observeChanges
+    @handle = Roles.find({_id: 'onduty'}, {fields: {holder: 1, expires_at: 1}}).observeChanges
       added: (role, {holder, expires_at}) =>
         @holder = holder
-        now = share.model.UTCNow()
+        now = Date.now()
         enqueue(expires_at)
 
       changed: (role, {holder, expires_at}) =>

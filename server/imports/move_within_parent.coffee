@@ -1,4 +1,5 @@
 import canonical from '/lib/imports/canonical.coffee'
+import { collection } from '/lib/imports/collections.coffee'
 
 export default moveWithinParent = (id, parentType, parentId, args) ->
   try
@@ -8,7 +9,7 @@ export default moveWithinParent = (id, parentType, parentId, args) ->
       [{$all: [id, args.before]}, $indexOfArray: ["$$npuzzles", args.before]]
     else if args.after?
       [{$all: [id, args.after]}, $add: [1, $indexOfArray: ["$$npuzzles", args.after]]]
-    res = Promise.await share.model.collection(parentType).rawCollection().updateOne({_id: parentId, puzzles: query}, [
+    res = Promise.await collection(parentType).rawCollection().updateOne({_id: parentId, puzzles: query}, [
       $set:
         puzzles: $let:
           vars: npuzzles: $filter: {input: "$puzzles", cond: $ne: ["$$this", id]}
@@ -19,7 +20,7 @@ export default moveWithinParent = (id, parentType, parentId, args) ->
               [id],
               {$cond: [{$eq: ["$$targetPosition", $size: "$$npuzzles"]}, [], $slice: ["$$npuzzles", "$$targetPosition", $subtract: [{$size: "$$npuzzles"}, "$$targetPosition"]]]}
             ]
-        touched: share.model.UTCNow()
+        touched: Date.now()
         touched_by: canonical(args.who)
     ])
     if res.modifiedCount is 1

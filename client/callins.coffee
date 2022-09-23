@@ -1,10 +1,8 @@
 'use strict'
 
 import { MUTE_SOUND_EFFECTS, EXPERT_MODE } from './imports/settings.coffee'
+import { CallIns } from '/lib/imports/collections.coffee'
 import * as callin_types from '/lib/imports/callin_types.coffee'
-
-model = share.model # import
-settings = share.settings # import
 
 Meteor.startup ->
   if typeof Audio is 'function' # for phantomjs
@@ -20,7 +18,7 @@ Meteor.startup ->
       status: 'pending'
     unless Session.equals 'currentPage', 'callins'
       query.callin_type = 'answer'
-    model.CallIns.find(query).observe
+    CallIns.find(query).observe
       added: (doc) ->
         return if initial
         console.log 'ding dong'

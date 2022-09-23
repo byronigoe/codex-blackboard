@@ -1,6 +1,7 @@
 'use strict'
 
-import canonical from '../../lib/imports/canonical.coffee'
+import canonical from '/lib/imports/canonical.coffee'
+import { Messages, Presence } from '/lib/imports/collections.coffee'
 import md5 from 'md5'
 import { callAs } from './impersonate.coffee'
 import Hubot from 'hubot/es2015'
@@ -106,12 +107,12 @@ class BlackboardAdapter extends Hubot.Adapter
       $set:
         nickname: @robot.name
         gravatar_md5: md5 @gravatar
-        bot_wakeup: share.model.UTCNow()
+        bot_wakeup: Date.now()
       $unset: services: ''
     # register our presence in general chat
     @present = (room_name) =>
-      now = share.model.UTCNow()
-      share.model.Presence.upsert {scope: 'chat', room_name: room_name, nick: @botname},
+      now = Date.now() 
+      Presence.upsert {scope: 'chat', room_name: room_name, nick: @botname},
         $set:
           timestamp: now
           bot: true
@@ -120,7 +121,7 @@ class BlackboardAdapter extends Hubot.Adapter
         $push: clients:
           connection_id: 'hubot_adapter'
           timestamp: now
-      share.model.Presence.update {scope: 'chat', room_name: room_name, nick: @botname},
+      Presence.update {scope: 'chat', room_name: room_name, nick: @botname},
         $pull: clients: 
           connection_id: 'hubot_adapter'
           timestamp: $lt: now
@@ -131,7 +132,7 @@ class BlackboardAdapter extends Hubot.Adapter
     IGNORED_NICKS = new Set ['', @botname]
     # listen to the chat room, ignoring messages sent before we startup
     startup = true
-    query = share.model.Messages.find(timestamp: $gt: share.model.UTCNow())
+    query = Messages.find(timestamp: $gt: Date.now())
     @handle = query.observeChanges
       added: (id, msg) =>
         return if startup
@@ -195,7 +196,7 @@ class BlackboardAdapter extends Hubot.Adapter
       if string?
         lines.push string
     if lines.length and envelope.message.direct and (not props.useful)
-      share.model.Messages.update envelope.message.id, $set: useless_cmd: true
+      Messages.update envelope.message.id, $set: useless_cmd: true
     lines.map (line) ->
       try
         map(line, props)
