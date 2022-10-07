@@ -31,7 +31,6 @@ ejson@1.1.2
 es5-shim@4.8.0
 facts-base@1.0.1
 facts-ui@1.0.0
-fds:coffeescript-share@1.0.0
 fetch@0.1.1
 geojson-utils@1.0.10
 hot-code-push@1.0.4

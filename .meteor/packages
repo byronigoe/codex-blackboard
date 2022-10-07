@@ -30,7 +30,6 @@ babel-runtime@1.5.1
 dynamic-import@0.7.2
 ecmascript@0.16.2
 meteortesting:mocha
-fds:coffeescript-share
 xolvio:cleaner
 accounts-base@2.2.3
 underscore@1.0.10
