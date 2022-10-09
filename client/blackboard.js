@@ -437,13 +437,6 @@ Template.blackboard.events({
   "click .bb-add-round"(event, template) {
     return template.addRound.set(true);
   },
-  "click .bb-canEdit .bb-fix-drive"(event, template) {
-    event.stopPropagation(); // keep .bb-editable from being processed!
-    Meteor.call("fixPuzzleFolder", {
-      object: this.puzzle._id,
-      name: this.puzzle.name,
-    });
-  },
 });
 
 Template.blackboard_favorite_puzzle.onCreated(function () {
