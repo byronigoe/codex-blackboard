@@ -98,7 +98,7 @@ export default scripts.codex = function (robot) {
     //suppressRoom: msg.envelope.room
     msg.reply(
       { useful: true },
-      `Okay, ${prefix}"${answer}" for ${target.object.name} added to call-in list!`
+      `Okay, ${prefix}"${params.answer}" for ${target.object.name} added to call-in list!`
     );
     msg.finish();
   }
