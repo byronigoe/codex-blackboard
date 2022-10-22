@@ -20,7 +20,6 @@ import "./imports/timestamp.js";
 // header bar, including the login modals and general Spacebars helpers
 
 function clickHandler(event, template) {
-  console.log("clickHandler");
   if (event.button !== 0) {
     return;
   } // check right-click
@@ -43,7 +42,7 @@ function clickHandler(event, template) {
         "status=yes,resizeable=yes,scrollbars=yes"
     );
   } else {
-    navigate(rawHref, { trigger: true });
+    navigate(rawHref);
   }
 }
 Template.page.events({
