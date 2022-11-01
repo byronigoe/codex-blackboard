@@ -77,6 +77,6 @@ Template.options_dropdown.events({
 
 Template.options_dropdown_column_checkbox.helpers({
   columnVisible() {
-    return CURRENT_COLUMNS.get().includes(this);
+    return CURRENT_COLUMNS.get().includes(this.column);
   },
 });
