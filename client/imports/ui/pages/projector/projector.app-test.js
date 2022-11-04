@@ -8,7 +8,7 @@ import chai from "chai";
 import sinon from "sinon";
 
 describe("projector", function () {
-  this.timeout(20000);
+  this.timeout(30000);
   let clock = null;
   beforeEach(() => (clock = sinon.useFakeTimers({ toFake: ["setInterval"] })));
 
