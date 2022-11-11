@@ -58,35 +58,11 @@ Meteor.startup(function () {
       }
       try {
         await blackboard.newAnswerSound.play();
-      } catch (err) {
+      } catch (err) /* istanbul ignore next */ {
         console.error(err.message, err);
       }
     },
   });
-});
-
-Meteor.startup(function () {
-  // see if we've got native emoji support, and add the 'has-emojis' class
-  // if so; inspired by
-  // https://stackoverflow.com/questions/27688046/css-reference-to-phones-emoji-font
-  const checkEmoji = function (char, x, y, fillStyle = "#000") {
-    const node = document.createElement("canvas");
-    const ctx = node.getContext("2d");
-    ctx.fillStyle = fillStyle;
-    ctx.textBaseline = "top";
-    ctx.font = "32px Arial";
-    ctx.fillText(char, 0, 0);
-    return ctx.getImageData(x, y, 1, 1);
-  };
-  const reddot = checkEmoji("\uD83D\uDD34", 16, 16);
-  const dancing = checkEmoji("\uD83D\uDD7A", 12, 16); // unicode 9.0
-  if (
-    reddot.data[0] > reddot.data[1] &&
-    dancing.data[0] + dancing.data[1] + dancing.data[2] > 0
-  ) {
-    console.log("has unicode 9 color emojis");
-    document.body.classList.add("has-emojis");
-  }
 });
 
 //######## general properties of the blackboard page ###########
@@ -224,23 +200,16 @@ Template.blackboard.events({
   },
   "click .bb-notification-enabled"(event, template) {
     if (notification.count() > 0) {
-      return (() => {
-        const result = [];
-        for (let item of notification.streams) {
-          result.push(notification.set(item.name, false));
-        }
-        return result;
-      })();
+      for (let item of notification.streams) {
+        notification.set(item.name, false);
+      }
     } else {
-      return (() => {
-        const result1 = [];
-        for (let item of notification.streams) {
-          result1.push(notification.set(item.name));
-        }
-        return result1;
-      })();
+      for (let item of notification.streams) {
+        // default value
+        notification.set(item.name);
+      }
     }
-  }, // default value
+  },
   "click .bb-notification-controls.dropdown-menu a"(event, template) {
     const $inp = $(event.currentTarget).find("input");
     const stream = $inp.attr("data-notification-stream");
@@ -823,12 +792,6 @@ Template.blackboard_puzzle_cells.helpers({
   addingTag: addingTagHelper,
 });
 
-Template.blackboard_column_body_answer.helpers({
-  answer() {
-    return getTag(this.puzzle, "answer") || "";
-  },
-});
-
 Template.blackboard_column_body_status.helpers({
   status() {
     return getTag(this.puzzle, "status") || "";
@@ -928,11 +891,4 @@ Template.blackboard_column_header_working.onCreated(function () {
   this.autorun(() => {
     this.subscribe("all-presence");
   });
-});
-
-// Update 'currentTime' every minute or so to allow pretty_ts to magically
-// update
-Meteor.startup(function () {
-  Session.set("currentTime", Date.now());
-  Meteor.setInterval(() => Session.set("currentTime", Date.now()), 60 * 1000);
 });

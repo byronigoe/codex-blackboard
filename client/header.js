@@ -4,7 +4,6 @@ import {
   Puzzles,
   Rounds,
 } from "/lib/imports/collections.js";
-import { navigate } from "/client/imports/router.js";
 import { jitsiUrl } from "./imports/jitsi.js";
 import { hashFromNickObject } from "./imports/nickEmail.js";
 import {
@@ -51,9 +50,6 @@ Template.header_loginmute.helpers({
   sessionNick() {
     // TODO(torgen): replace with currentUser
     const user = Meteor.user();
-    if (user == null) {
-      return;
-    }
     return {
       name: user.nickname,
       canon: user._id,
@@ -68,9 +64,6 @@ Template.header_loginmute.helpers({
     return unreadHelper({ mention: Meteor.userId() });
   },
   clamp(value, limit) {
-    if (!value) {
-      return;
-    }
     if (value > limit) {
       return `${limit}+`;
     }
@@ -111,12 +104,6 @@ Template.header_loginmute.events({
   "click .bb-logout"(event, template) {
     event.preventDefault();
     Meteor.logout();
-  },
-  "click .bb-unprotect"(event, template) {
-    navigate("/edit");
-  },
-  "click .bb-protect"(event, template) {
-    navigate("/");
   },
   "click li[data-tab]:not(.active)"(event, template) {
     template.visibleTab.set(event.currentTarget.dataset.tab);

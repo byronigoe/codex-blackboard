@@ -15,7 +15,7 @@ Meteor.startup(function () {
     } // reactive, will re-execute when ready
     let initial = true;
     const query = { status: "pending" };
-    if (!Session.equals("currentPage", "callins")) {
+    if (!Session.equals("currentPage", "logistics")) {
       query.callin_type = "answer";
     }
     CallIns.find(query).observe({
@@ -29,7 +29,7 @@ Meteor.startup(function () {
         }
         try {
           await newCallInSound.play();
-        } catch (err) {
+        } catch (err) /* istanbul ignore next */ {
           console.error(err.message, err);
         }
       },

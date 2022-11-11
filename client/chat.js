@@ -104,6 +104,7 @@ instachat["scrolledToBottom"] = true;
 instachat["readMarker"] = $('<div class="bb-message-last-read">read</div>');
 instachat["mutationObserver"] = new MutationObserver(function (recs, obs) {
   for (let rec of recs) {
+    /* istanbul ignore else */
     if (!Meteor.isProduction) {
       if (
         [...rec.addedNodes, ...rec.removedNodes].some(
@@ -138,12 +139,6 @@ Template.chat.helpers({
   object() {
     const type = Session.get("type");
     return type !== "general" && collection(type)?.findOne(Session.get("id"));
-  },
-  solved() {
-    const type = Session.get("type");
-    return (
-      type !== "general" && collection(type)?.findOne(Session.get("id"))?.solved
-    );
   },
 });
 
@@ -462,6 +457,7 @@ Template.messages.onRendered(function () {
   if (FOLLOWUP_STYLE === "js") {
     // observe future changes
     this.$("#messages").each(function () {
+      /* istanbul ignore else */
       if (!Meteor.isProduction) {
         console.log(`Observing ${this}`);
       }
@@ -1011,7 +1007,6 @@ Template.messages_input.onCreated(function () {
         hideMessageAlert();
         joinRoom(result.type, result._id);
         return true;
-        break;
       case "/msg":
       case "/m":
         // find who it's to
