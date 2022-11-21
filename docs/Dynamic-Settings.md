@@ -74,6 +74,6 @@ Format: integer
 Time in minutes between collections of periodic statistics for the chart view at `/statistics` and `/projector`. If
 nobody is using those views, this wastes space, so don't set it. Setting it to 0 disables collection, but any
 previously collected points are still preserved and graphed.
-Currently the only statistic collected is number of solvers online. 
+Currently the only statistic collected is number of solvers online.
 
 Format: integer
