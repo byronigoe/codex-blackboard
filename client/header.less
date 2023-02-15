@@ -20,6 +20,14 @@
     background: url('/img/irongrip.png');
     color: #c4c4c4;
     strong,b {  color: #f5f5f5; }
+    .messageRow {
+      color: #666; /*font-size: 1.2em; margin: 4px 5px;*/
+    }
+    .actionRow {
+      font-style: italic;
+      background-color: rgb(244,255,253);
+      color: rgb(4,121,170);
+    }
     .messageRow, .actionRow, .bb-lastupdate {
       &, & .timestamp { color: #c4c4c4; }
     }
@@ -34,6 +42,44 @@
     }
   }
 }
+#bb-avatar-dropdown {
+  & > a {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 10px;
+  }
+  .caret {
+    margin-top: 10px;
+  }
+  .dropdown-toggle .badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+}
+
+.bb-buttonbar {
+  display: flex;
+  flex-direction: row;
+  text-align: right;
+  padding-right: 5px;
+  .btn-group { text-align: left; }
+  .btn-toolbar { margin-top: 0; margin-bottom: 0; }
+  .tooltip-inner {
+    color: #000;
+    background-color: #eee;
+    border-color: black;
+    border-style: solid;
+    border-width: 0 1px 1px 1px;
+  }
+  .tooltip.bottom .tooltip-arrow {
+    border-bottom-color: #eee;
+  }
+  /* tweak to fix up moving buttons when tooltip appears */
+  .bb-protect { margin-right: -1px; }
+  .bb-unprotect { margin-left: 0; }
+}
+
 .bb-breadcrumbs {
   position: relative;
   display: flex;
@@ -51,12 +97,6 @@
     flex-shrink: 1;
   }
   .nav {
-    &.bb-omit-when-narrow {
-      @media (max-width: 767px) {
-        display: flex !important;
-        top: calc(-1 * @nav-height);
-      }
-    }
     height: @nav-height;
     display: flex;
     width: -webkit-max-content;
@@ -69,16 +109,6 @@
     margin: 0px;
     border-bottom: 1px solid black;
     box-shadow: 0px 2px 4px rgba(0,0,0,0.5);
-    #bb-avatar-dropdown {
-      & > a {
-        padding-top: 8px;
-        padding-bottom: 8px;
-        padding-left: 10px;
-      }
-      .caret {
-        margin-top: 10px;
-      }
-    }
     & > li {
       display: flex;
       flex-grow: 0;
@@ -132,6 +162,8 @@
       }
     }
   }
+  .tooltip-inner { .bb-buttonbar .tooltip-inner; }
+  .tooltip.bottom .tooltip-arrow { .bb-buttonbar .tooltip.bottom .tooltip-arrow; }
 }
 
 .ellipsis() {
@@ -211,11 +243,6 @@
   .connecting & { --glyph: "\f1ce"; animation: fa-spin 2s infinite linear; color: #FF0; }
   .failed &, .offline & { --glyph: "\f057"; color: #F00; }
   .waiting & { --glyph: "\f110"; animation: fa-spin 2s infinite steps(8); color: #F80; }
-}
-#bb-avatar-dropdown .dropdown-toggle .badge {
-  position: absolute;
-  bottom: 0;
-  left: 0;
 }
 #bb-avatar-dropdown-content {
   display: none;
@@ -310,38 +337,38 @@
   text-overflow: ellipsis;
 }
 
-#bb-body {
-  .timestamp { font-size: 10px; }
-}
-
 @media(max-width:480px) {
   .modal-header { display: none }
-}
-
-#nickPick {
-  .gravatar {
-    float: left;
-    @media(max-width: 480px) {
-      float: right;
-      img {
-        width:60px;
-        height:60px;
-      }
-    }
+  .navbar-fixed-top, .navbar-fixed-bottom {
+    margin-left: 0px;
+    margin-right: 0px;
   }
 }
-
-form#joinRoom {
-  margin: 6px 6px 0 0; /* properly center search field */
-  .input-prepend {
-    .add-on {
-      color: #666;
-      -webkit-border-radius: 14px 0 0 14px;
-         -moz-border-radius: 14px 0 0 14px;
-              border-radius: 14px 0 0 14px;
-    }
+@media (max-width: 767px) {
+  .bb-omit-when-narrow { display: none !important; }
+  .bb-buttonbar .bb-login { float: right; }
+}
+@media (min-width: 768px) and (max-width: 980px) {
+  .bb-buttonbar .bb-login { float: right }
+}
+@media (max-width: 980px) {
+  /* navbar becomes unfixed below 980px */
+  .navbar-fixed-top {
+    margin-bottom: 0;
+    padding: 0;
+    position: fixed;
   }
+}
+@media (max-width: 1440px) {
+  .nav li .bb-omit-when-narrow { display: none; }
 }
 
 /* ensure typeahead is shown over modals */
 ul.typeahead { z-index: 1099; }
+
+.bb-abbrev-when-narrow::before {
+  content: attr(data-full);
+  @media (max-width: 1200px)  {
+    content: attr(data-abbrev);
+  }
+}
