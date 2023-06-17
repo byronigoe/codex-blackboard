@@ -22,6 +22,7 @@ import "/client/imports/ui/components/edit_object_title/edit_object_title.js";
 import "/client/imports/ui/components/fix_puzzle_drive/fix_puzzle_drive.js";
 import "/client/imports/ui/components/onduty/control.js";
 import "/client/imports/ui/components/tag_table_rows/tag_table_rows.js";
+import "/client/imports/ui/components/time_since/time_since.js";
 
 //######## general properties of the blackboard page ###########
 
