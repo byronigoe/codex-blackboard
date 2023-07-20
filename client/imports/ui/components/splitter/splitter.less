@@ -1,0 +1,206 @@
+.border-box {
+  -webkit-box-sizing: border-box;
+     -moz-box-sizing: border-box;
+          box-sizing: border-box;
+}
+
+:fullscreen .bb-pop-full-menu {
+  display:none;
+}
+
+/* special hack for 100% height layout w/ vertical slider,
+   used on puzzle and round pages */
+html.fullHeight {
+
+  &, body, #bb-body, #bb-content, .bb-puzzleround,
+  .bb-splitter, .bb-splitter iframe, .bb-vsplitter {
+    height: 100%;
+  }
+  .bb-splitter > .bb-left-content, .bb-splitter iframe {
+    width: 100%;
+  }
+  #bb-body, #bb-content, .bb-puzzleround,
+  .bb-splitter, .bb-splitter > div, .bb-splitter iframe,
+  .bb-top-content > div, .bb-vsplitter { .border-box; }
+}
+
+/* splitter! */
+.bb-puzzleround {
+  /* This is also computed with a listener in splitter.js. */
+  --splitter-width: 6px;
+  @media (pointer: coarse) {
+    --splitter-width: 12px;
+  }
+  position: relative; /* establish positioning context */
+  width: 100%;
+  padding-left: 0px; padding-right: 0px;
+  background-color: var(--bg-color);
+  box-shadow: 0px 2px 4px rgba(0,0,0,0.5);
+  .navbar { margin: 0 10px; }
+}
+.bb-splitter-handle {
+  user-select: none;
+  &:hover { background-color: #aaa; }
+  background: #ccc no-repeat center;
+}
+.bb-splitter { /* vertical */
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  padding-right: var(--right-column);
+  @media (max-width: 767px) {
+    padding-right: initial;
+  }
+  &, & > div { height:100%; }
+  & > .bb-splitter-handle {
+    width: var(--splitter-width);
+    cursor: ew-resize;
+    right: var(--right-column);
+    background-image: url('/img/vgrabber.gif');
+    @media (max-width: 767px) {
+      display: none;
+    }
+  }
+  &.active {
+    & > .bb-splitter-handle { background-color: #e88; }
+    .bb-left-content, .bb-right-content { pointer-events: none; }
+  }  
+}
+.bb-left-content { 
+  overflow-y: auto;
+  left: 0; top: 0;
+  .bb-pop-full-menu {
+    &:empty {
+      display: none;
+    }        
+    position: absolute;
+    right: calc(var(--right-column) + 16px);
+    margin-right: var(--splitter-width);
+    background: var(--bg-color);
+    border: 1px solid #888;
+    padding-left: 2px; padding-right: 4px;
+    padding-top: 0px;
+    @media (max-width: 767px) {
+      right: 16px;
+    }
+  }
+  iframe {
+    display: block;
+  }
+}
+.bb-left-content, .bb-top-right-content {
+  background: var(--much-lighter);
+}
+/* horizontal splitter in right half */
+.bb-right-content {
+  position: absolute;
+  right: 0px;
+  width: var(--right-column);
+  .bb-vsplitter {
+    display: flex;
+    flex-flow: column nowrap;
+  }
+  @media (max-width: 767px) {
+    display: none;
+  }
+  .bb-splitter-handle {
+    height: var(--splitter-width);
+    background-image: url('/img/hgrabber.gif');
+    cursor: ns-resize;
+    left: 0; right: 0;
+    flex-grow: 0;
+    flex-shrink: 0;
+  }
+  &.active {
+    .bb-splitter-handle { background-color: #e88; }
+    .bb-top-right-content, .bb-bottom-right-content { pointer-events: none; }
+  }
+}
+.bb-top-right-content, .bb-bottom-right-content {
+  width: 100%;
+  overflow: auto;
+}
+.bb-top-right-content {
+  flex-grow: 0;
+  flex-shrink: 1;
+}
+.bb-bottom-right-content {
+  flex-grow: 1;
+  flex-shrink: 0;
+  flex-basis: var(--splitter-bottom-size);
+  position: relative;
+  /* chat stylin' */
+  background: url('/img/grid_noise.png');
+  background-attachment: fixed;
+  .darkMode & {
+    background-blend-mode: soft-light;
+    background-color: var(--bg-color);
+  }
+  overflow: hidden;
+  .bb-message-container, .bb-chat-messages { .border-box; }
+  .bb-message-container {
+    overflow: auto;
+    position: absolute;
+    left: 0; right: 0;
+    top: 0; bottom: calc(36px + var(--jitsi-height, 0px));
+  }
+  .bb-chat-messages {
+    padding: 5px 2px 0 2px;
+    margin-bottom: 0;
+  }
+  .bb-chat-footer {
+    position: absolute;
+    left: 0; right: 0; margin-left: 0; margin-right: 0;
+    bottom: var(--jitsi-height, 0);
+  }
+  .bb-chat-pop-out {
+    position: absolute; top: 0; right: 14px;
+    background: var(--bg-color);
+    border: 1px solid #888;
+    padding-left: 2px; padding-right: 4px;
+    border-bottom-left-radius: 5px;
+    &.in-margin {
+      padding-top: 5px;
+    }
+  }
+}
+#bb-jitsi-container {
+  height: var(--jitsi-height, 0px);
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  .bb-pin-overlay {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: var(--bg-color);
+    border: 1px solid #888;
+    padding-left: 2px; padding-right: 4px;
+    border-bottom-left-radius: 5px;
+    .bb-jitsi-pin {
+      color: grey;
+    }
+    .bb-jitsi-unpin {
+      color: #49afcd;
+      &.bb-jitsi-pin-used {
+        color: red;
+      }
+    }
+    .bb-jitsi-cap-height {
+      color: grey;
+      &.capped {
+        color: #49afcd;
+      }
+    }
+  }
+  iframe { display: block; }
+}
+
+@media (max-width: 980px) {
+  .bb-puzzleround { padding-top: 0 !important; }
+  /* fixup fullHeight stuff */
+  html.fullHeight {
+    body { padding-right: 0; padding-left: 0; }
+  }
+}

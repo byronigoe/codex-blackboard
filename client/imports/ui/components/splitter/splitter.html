@@ -1,0 +1,29 @@
+<template name="horizontal_splitter"> 
+  {{! content block: left side content.
+      else block: right side content.
+      Would be nice if there were more than two slots, like you can do with web
+      components. }}
+  <div class="bb-splitter" style="--right-column: {{hsize}}px; ">
+    <div class="bb-left-content">{{> Template.contentBlock}}</div>
+    <div class="bb-splitter-handle"></div>
+    <div class="bb-right-content">{{> Template.elseBlock}}</div>
+  </div>
+</template>
+
+<template name="vertical_splitter">
+  {{! content block: top content.
+      else block: bottom content. 
+      context: whether to hide the top content }}
+  
+  <div class="bb-vsplitter" style="{{#unless this}}--splitter-bottom-size: {{vsize}}px{{/unless}}">{{! start right of splitter }}
+    {{#unless this}}
+      <div class="bb-top-right-content">{{! start top right splitter }}
+        {{> Template.contentBlock}}
+      </div>
+      <div class="bb-splitter-handle"></div>
+    {{/unless}}
+    <div class="bb-bottom-right-content">{{! start bottom right splitter }}
+      {{> Template.elseBlock }}
+    </div>
+  </div>
+</template>

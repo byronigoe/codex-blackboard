@@ -1,0 +1,374 @@
+@nav-height: 40px;
+
+#bb-body .navbar-fixed-top {
+  height: 100%;
+  display: flex;
+  flex-flow: column nowrap;
+  pointer-events: none;
+  box-shadow: unset;
+  align-items: stretch;
+  @media (max-width: 767px) {
+    margin-left: 0px;
+    margin-right: 0px;
+    .bb-unlock-group {
+      display: none;
+      & + .btn-group { margin-left: 0px; }
+    }
+  }
+  .navbar-inner, .bb-breadcrumbs .nav {
+    pointer-events: auto;
+    background: url('/img/irongrip.png');
+    color: #c4c4c4;
+    strong,b {  color: #f5f5f5; }
+    .messageRow {
+      color: #666; /*font-size: 1.2em; margin: 4px 5px;*/
+    }
+    .actionRow {
+      font-style: italic;
+      background-color: rgb(244,255,253);
+      color: rgb(4,121,170);
+    }
+    .messageRow, .actionRow, .bb-lastupdate {
+      &, & .timestamp { color: #c4c4c4; }
+    }
+    border: 0px;
+    li .dropdown-menu::after { border-bottom-color: #333 }
+  }
+  .bb-display-settings {
+    .bb-display-settings-title {display: none;}
+    & > .dropdown-menu {
+      left: initial;
+      right: 0;
+    }
+  }
+}
+#bb-avatar-dropdown {
+  & > a {
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 10px;
+  }
+  .caret {
+    margin-top: 10px;
+  }
+  .dropdown-toggle .badge {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+  }
+}
+
+.bb-buttonbar {
+  display: flex;
+  flex-direction: row;
+  text-align: right;
+  padding-right: 5px;
+  .btn-group { text-align: left; }
+  .btn-toolbar { margin-top: 0; margin-bottom: 0; }
+  .tooltip-inner {
+    color: #000;
+    background-color: #eee;
+    border-color: black;
+    border-style: solid;
+    border-width: 0 1px 1px 1px;
+  }
+  .tooltip.bottom .tooltip-arrow {
+    border-bottom-color: #eee;
+  }
+  /* tweak to fix up moving buttons when tooltip appears */
+  .bb-protect { margin-right: -1px; }
+  .bb-unprotect { margin-left: 0; }
+}
+
+.bb-breadcrumbs {
+  position: relative;
+  display: flex;
+  flex-flow: column nowrap;
+  overflow-x: auto;
+  flex-grow: 1;
+  flex-shrink: 1;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  .fill {
+    flex-grow: 1;
+    flex-shrink: 1;
+  }
+  .nav {
+    height: @nav-height;
+    display: flex;
+    width: -webkit-max-content;
+    width: -moz-max-content;
+    width: max-content;
+    min-width: 100%;
+    flex-flow: row nowrap;
+    justify-content: stretch;
+    float: none;
+    margin: 0px;
+    border-bottom: 1px solid black;
+    box-shadow: 0px 2px 4px rgba(0,0,0,0.5);
+    & > li {
+      display: flex;
+      flex-grow: 0;
+      flex-shrink: 0;
+      @media (max-width: 767px) {
+        & > a {
+          padding-left: 10px;
+          padding-right: 10px;
+        }
+      }
+      & > a + a {
+        padding-left: 0px;
+        margin-left: -10px;
+        @media (max-width: 767px) {
+          margin-left: -5px;
+        }
+      }
+      i.current, .current i {
+        border-bottom: 2px solid white;
+      }
+      &:not(.loginmute) a:not(.current) i:not(.current):hover {
+        border-bottom: 1px solid white;
+      }
+      .btn-group .caret { border-top-color:white; border-bottom-color: white;}
+      &.dropdown.open .dropdown-menu {
+        display: flex;
+        background: url('/img/irongrip.png');
+        color: #c4c4c4;
+        flex-flow: column nowrap;
+        & > li {
+          display: flex;
+          flex-flow: row nowrap;
+          color: #c4c4c4;
+          a[href] {
+            color: #c4c4c4;
+            &:hover { background: none; color: white;}
+          }
+          a + a { padding-left: 0px; margin-left: -10px; }
+        }
+      }
+    }
+    & > .fill {
+      flex-grow: 1;
+      flex-shrink: 1;
+      overflow: hidden;
+      position: relative;
+    }
+    .bb-drive-buttons {
+      .bb-drive-link + .tooltip .tooltip-arrow {
+        left: auto; right: 20px;
+      }
+    }
+  }
+  .tooltip-inner { .bb-buttonbar .tooltip-inner; }
+  .tooltip.bottom .tooltip-arrow { .bb-buttonbar .tooltip.bottom .tooltip-arrow; }
+}
+
+.ellipsis() {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@vert-padding: 4px;
+
+.bb-lastchat {
+  margin-bottom: @vert-padding;
+  margin-top: @vert-padding;
+  display: flex;
+  flex-flow: row nowrap;
+  flex-grow: 1;
+  flex-shrink: 1;
+  overflow: hidden;
+  /* This makes it take up exactly all the space in the li,
+     but it doesn't count toward the li's size so the li
+     can shrink to 0 if necessary. */
+  position: absolute;
+  left: 0;
+  right:0;
+  .messageRow {
+    .ellipsis();
+    margin-top: 0;
+    margin-bottom: 0;
+    font-size:14px;
+    line-height:16px;
+    height:16px;
+    .badge {
+      line-height: 12px;
+      font-size: 12px;
+      border-radius: 6px;
+      padding-left: 4px;
+      padding-right: 4px;
+    }
+    strong > img { margin-right: 1px; }
+  }
+  .rooms {
+    width: min-content;
+    white-space: initial;
+    font-weight: bold;
+    font-size: 32px;
+    line-height: 32px;
+    padding-left: 15px;
+    display: flex;
+    flex-direction: column-reverse;
+    color: white; /* not --text-color; header is always dark. */
+  }
+  .chats {
+    .ellipsis();
+    padding-left: 8px;
+    display: flex;
+    flex-direction: column-reverse;
+    flex-grow: 1;
+    flex-shrink: 1;
+  }
+  .timestamp { color: #555; }
+  /* add some subtle highlighting to tie the 'more' links to the
+    * left-hand content */
+  &:hover {
+    background: rgba(0,0,0,0.1);
+    border-radius: 5px;
+  }
+}
+.bb-statuslight {
+  line-height: 1;
+  display: inline-block;
+  vertical-align: middle;
+  &:before {
+    font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+    content: var(--glyph);
+  }
+  .connected & { --glyph: "\f111"; color: #0F0; }
+  .connecting & { --glyph: "\f1ce"; animation: fa-spin 2s infinite linear; color: #FF0; }
+  .failed &, .offline & { --glyph: "\f057"; color: #F00; }
+  .waiting & { --glyph: "\f110"; animation: fa-spin 2s infinite steps(8); color: #F80; }
+}
+#bb-avatar-dropdown-content {
+  display: none;
+  background: transparent;
+  margin-top: 0;
+  margin-bottom: 0;
+  margin-left: 0;
+  margin-right: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  padding-right: 0;
+  border: none;
+  align-items: flex-start;
+  box-shadow: none;
+  -webkit-box-shadow: none;
+  pointer-events: none;
+  .open > & {
+    display: flex;
+  }
+  flex-direction: row-reverse;
+  position: fixed;
+  top: @nav-height;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  @media (max-width: 767px) {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+  & > * {
+    pointer-events: auto;
+    position: static;
+    margin-top: 0;
+    border-radius: 6px;
+    margin-right: 2px;
+    z-index: 1040;
+  }
+  div {
+    margin-bottom: 0;
+  }
+  & > div {
+    width: 480px;
+    max-height: calc(100% - 12px);
+    padding-left: 5px;
+    padding-right: 5px;
+    & > h5 {
+      margin: 4px 20px;
+    }
+    overflow-y: hidden;
+    @media (max-width: 767px) {
+      margin-top: 2px;
+      margin-left: 2px;
+      width: unset;
+      flex-shrink: 1;
+      max-height: unset;
+      & > h5 {
+        text-align: right;
+      }
+    }
+  }
+  .bb-chat-messages {
+    overflow-y: auto;
+  }
+  .media {
+    overflow: visible;
+    --bg-color: inherit;
+    margin-left: 1px;
+    margin-right: 1px;
+  }
+  .bb-message-action {
+    background: var(--bg-color);
+    color: var(--text-color);
+  }
+  .bb-message-body {
+    color: var(--text-color);
+  }
+  [data-read="unread"] {
+    --bg-color: cornsilk;
+    .darkMode & {
+      --bg-color: #3b3b22;
+    }
+  }
+}
+
+.bb-puzzle-name:before {
+  display: inline-block;
+  vertical-align: bottom;
+  white-space: nowrap;
+  max-width: 20em;
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+}
+
+@media(max-width:480px) {
+  .modal-header { display: none }
+  .navbar-fixed-top, .navbar-fixed-bottom {
+    margin-left: 0px;
+    margin-right: 0px;
+  }
+}
+@media (max-width: 767px) {
+  .bb-omit-when-narrow { display: none !important; }
+  .bb-buttonbar .bb-login { float: right; }
+}
+@media (min-width: 768px) and (max-width: 980px) {
+  .bb-buttonbar .bb-login { float: right }
+}
+@media (max-width: 980px) {
+  /* navbar becomes unfixed below 980px */
+  .navbar-fixed-top {
+    margin-bottom: 0;
+    padding: 0;
+    position: fixed;
+  }
+}
+@media (max-width: 1440px) {
+  .nav li .bb-omit-when-narrow { display: none; }
+}
+
+/* ensure typeahead is shown over modals */
+ul.typeahead { z-index: 1099; }
+
+.bb-abbrev-when-narrow::before {
+  content: attr(data-full);
+  @media (max-width: 1200px)  {
+    content: attr(data-abbrev);
+  }
+}

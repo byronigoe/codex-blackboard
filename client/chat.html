@@ -1,0 +1,224 @@
+<template name="chat">
+
+  {{> messages}}
+  {{#with object}}
+    {{> puzzle_callin_modal}}
+    {{> puzzle_summon_modal}}
+  {{/with}}
+  <div class="navbar navbar-inverse navbar-fixed-bottom">
+    {{>messages_input}}
+  </div>
+</template>
+
+<template name="embedded_chat">
+  <div style="{{#with jitsiSize}}--jitsi-height: {{this}}px;{{/with}}">
+    <div class="bb-message-container">
+      {{> messages }}
+    </div>
+    {{#messages_input}}
+      {{#if canJitsi}}
+        {{#let jp=jitsiPresence}}
+        <button class="btn btn-mini btn-inverse bb-join-jitsi" title="Connect to Jitsi meeting.{{#with jp.count}}
+There {{#if plural this}}are{{else}}is{{/if}} already {{this}} other {{#if plural this}}people{{else}}person{{/if}} in the meeting.{{/with}}{{#if otherJitsi}}
+This will disconnect another tab from its meeting.{{/if}}">
+          <i class="fas fa-video"></i>
+            {{#with jp.count}}
+              <span class="presence-count">{{this}}</span>
+            {{/with}}
+        </button>
+        {{/let}}
+      {{/if}}
+    {{/messages_input}}
+    <div id="bb-jitsi-container">
+      {{#if inJitsi}}
+        <div class="bb-pin-overlay">
+          <a href="#" class="{{#if jitsiPinSet}}bb-jitsi-unpin {{#if usingJitsiPin}}bb-jitsi-pin-used{{/if}}{{else}}bb-jitsi-pin{{/if}}"
+            title="{{#if usingJitsiPin}}You are pinned to the Jitsi meeting for {{pinnedRoomName}}.
+Clicking here will join the meeting for your current page.
+            {{else if jitsiPinSet}}You are pinned to the Jitsi meeting for this page.
+You will stay in this meeting if you navigate to another page.
+            {{else}}If you navigate to another page you will join the Jitsi meeting for that page.
+Click here to stay in this meeting instead.{{/if}}">
+            {{#if usingJitsiPin}}{{pinnedRoomName}}{{/if}}
+            <i class="fas fa-thumbtack"></i>
+          </a>
+          {{#if usingJitsiPin}}<a href="{{pinnedRoomUrl}}" title="Return to {{pinnedRoomName}}"><i class="fas fa-undo"></i></a>{{/if}}
+          <a href="#" class="bb-jitsi-cap-height {{#if jitsiHeightCapped}}capped{{/if}}" title="Limit jitsi meeting to 75 pixels high"><i class="fas fa-compress-alt"></i></a>
+          <a href="{{jitsiUrl}}" class="bb-pop-jitsi" target="jitsi" title="Open this meeting in another tab"><i class="fas fa-external-link-alt"></i></a>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</template>
+
+<template name="messages_input">
+  {{#if show_presence}}
+    <table class="bb-chat-presence-block" title="Who's here?">
+      <tbody>
+        {{#each whos_here}}
+        <tr>
+          <td class="bb-avatar">{{>gravatar nick=nick size=48}}</td>
+          <td>{{nickAndName nick}}</td>
+          <td>{{nickLocation nick}}</td>
+        </tr>
+        {{/each}}
+      </tbody>
+    </table>
+  {{/if}}
+  <div class="bb-chat-input bb-chat-footer">
+    <button class="btn btn-mini btn-inverse bb-show-whos-here {{#if show_presence}}active{{/if}}">
+      <i class="fas fa-angle-double-{{#if show_presence}}down{{else}}up{{/if}}"></i>
+      <i class="fas fa-address-card"></i>
+    </button>
+    {{>Template.contentBlock}}
+    <form id="messageForm" class="navbar-form dropup">
+      {{#with typeaheadResults}}
+        <ul id="messageInputTypeahead" class="typeahead dropdown-menu">
+          {{#each this}}
+            <li class="{{#if selected _id}}active{{/if}}"><a href="#" data-value="{{_id}}">{{>gravatar_with_badges nick=_id size=16}} {{nickAndName _id}}{{#if isonduty _id}} <i class="fas fa-pager" title="onduty"></i>{{/if}}</a></li>
+          {{else}}
+            <li class="disabled"><a name="nomatch">No matches</a></li>
+          {{/each}}
+        </ul>
+      {{/with}}
+      <textarea id="messageInput" class="input-block-level {{#if error}}error{{/if}}" rows="1"
+              placeholder="Type your message and press enter..."
+              autocomplete="off"></textarea>
+      <div class="tooltip fade top {{#if error}}in{{else}}out{{/if}}" style="top: -33px; left: 114.094px; display: block;"><div class="tooltip-arrow"></div><div class="tooltip-inner">{{error}}</div></div>
+    </form>
+  </div>
+</template>
+
+<template name="message_delete_button">
+  <div class="bb-delete-message"></div>
+</template>
+
+<template name="starred_messages">
+  {{#if messages.count}}
+  <div class="bb-chat-messages bb-starred-messages {{#if canModify}}can-modify-star{{/if}}">
+    <h3>Starred Messages</h3>
+    {{#each messages}}
+      {{> media_message }}
+    {{/each}}
+  </div>
+  {{/if}}
+</template>
+
+<template name="media_message">
+  <div class="bb-message media {{#if message.to}}bb-message-pm{{else if includes message.mention mynick}}bb-message-mention-me{{/if}}{{#if message.mail}} bb-message-mail{{/if}}{{#if message.tweet}} bb-message-tweet{{/if}}{{#if message.starred}} starred{{/if}}"
+       data-nick="{{message.nick}}" data-pm-to="{{message.to}}" data-read="{{#unless read}}un{{/unless}}read" data-message-id="{{message._id}}">
+    {{#if message.tweet}}
+      <img src="{{message.tweet.avatar}}" class="media-object pull-left img-rounded" width=48 height=48>
+    {{else if message.mail}}
+       {{>gravatar_hash gravatar_md5=(md5 message.nick) size=48 classes="media-object pull-left img-rounded" }}
+    {{else}}
+      {{>gravatar_with_badges nick=message.nick size=48 classes="media-object pull-left img-rounded" }}
+    {{/if}}
+    <div class="media-body bb-message-body">
+      <div class="pull-right timestamp">{{pretty_ts message.timestamp}}</div>
+      {{#unless message.to}}
+        {{! can't star a PM. }}
+        <div class="bb-message-star"></div>
+      {{/unless}}
+      {{> message_delete_button}}
+      <h5 class="media-heading">
+        {{#if message.tweet}}
+          <i class="fab fa-twitter"></i> @<a href="https://twitter.com/{{message.nick}}" target="_blank">{{message.nick}}</a> <a href="https://twitter.com/{{message.nick}}/status/{{message.tweet.id_str}}" target="_blank">tweeted</a>:
+        {{else if message.mail}}
+          Mail from {{#with message.mail.sender_name}}{{this}}{{else}}{{message.nick}}{{/with}} <i class="fas fa-envelope"></i> {{message.mail.subject}}
+        {{else}}
+          <span title="{{message.nick}}{{nickLocation message.nick}}" class="{{#if nickNear message.nick}}near{{/if}}">{{#if isonduty message.nick}}<i class="fas fa-pager" title="On duty"></i> {{/if}}{{nickOrName message.nick}}</span>
+            {{#if any message.to (includes message.mention mynick)}}
+              <small>({{#if message.to}}Private{{#unless equal message.to currentUser._id}}
+                to {{>gravatar nick=message.to size=12}}{{nickOrName message.to}}{{/unless}}{{else}}Mentioned you{{/if}}{{#if showRoom}}{{#let splitroom=(split message.room_name "/")}}
+                in {{#if equal splitroom.[0] "general"}}<a href="/">{{generalRoomName}}</a>
+                {{else}}{{>link id=splitroom.[1]}}{{/if}}{{/let}}<a href="/chat/{{message.room_name}}" class="bb-pop-out" target="pmchat" title="Open Chat in new window"><i class="fas fa-comments"></i> <i class="fas fa-external-link-alt"></i></a>{{/if}})</small>
+            {{/if}}
+        {{/if}}
+      </h5>
+      {{#if message.action}}*** {{/if}}
+      {{#if message.tweet}}
+        {{{message.body}}}
+        {{#if message.tweet.quote}}
+          <h6>in reply to @<a href="https://twitter.com/{{message.tweet.quote_nick}}" target="_blank">{{message.tweet.quote_nick}}</a>'s <a href="https://twitter.com/{{message.tweet.quote_nick}}/status/{{message.tweet.quote_id_str}}" target="_blank">tweet</a>:</h6>
+          <blockquote>{{{message.tweet.quote}}}</blockquote>
+        {{/if}}
+      {{else}}
+        {{>chat_format_body body=message.body bodyIsHtml=message.bodyIsHtml}}
+      {{/if}}  
+      {{#if message.action}} ***{{/if}}
+      {{#if message.poll}}{{> poll message.poll}}{{/if}}
+    </div> 
+  </div>  
+</template>
+
+<template name="chat_format_body">
+  {{#each chunk in chunks}}{{>dynamic_no_whitespace template=(chunk_template chunk.type) data=chunk.content}}{{/each}}
+</template>
+
+<template name="poll">
+  <table class="poll">
+    <tbody>
+      {{#each options}}
+        <tr>
+          <td class="option"><button class="btn btn-mini {{#if yours}}active{{/if}}" data-option="{{_id}}">{{text}}</button></td>
+          <td class="results">
+            {{#if show_votes}}
+              {{#each votes}}{{>gravatar nick=_id size=20 title=(nickOrName _id)}}{{/each}}
+            {{else}}
+              <div class="progress"><div class="bar {{#if leading}}bar-success{{/if}}" style="width: {{width}}%">{{votes.length}}</div></div>
+            {{/if}}
+          </td>
+        </tr>
+      {{/each}}
+    </tbody>
+  </table>
+  <button class="btn btn-link btn-small toggle-votes">{{#if show_votes}}Hide{{else}}Show{{/if}} Votes</button>
+</template>
+
+<template name="messages">
+  <div id="messages" class="bb-chat-messages {{#if mynick}}can-modify-star{{/if}}">
+    {{#if ready}}
+      {{#if startOfChannel}}
+        <button disabled="" class="btn btn-small btn-block btn-info bb-chat-start">No earlier messages</button>
+      {{else}}
+        <button class="btn btn-small btn-info btn-block bb-chat-load-more">Load more messages</button>
+      {{/if}}
+    {{else}}
+      <button class="btn btn-small btn-info btn-block active bb-chat-loading">Loading <i class="fas fa-spin fa-spinner"></i></button>
+    {{/if}}
+    {{#each messages}}{{scrollHack}}
+      {{#if message.dawn_of_time}}<!-- Channel creation -->
+      {{else if message.presence}}
+        {{#unless presence_too_old}}
+          <div class="bb-message-presence {{message.presence}}" title="{{pretty_ts message.timestamp}}: {{message.body}}" data-read="{{#unless read}}un{{/unless}}read">
+            {{>gravatar nick=message.nick size=16 }}{{message.nick}}
+          </div>
+        {{/unless}}
+      {{else if message.system}}
+        <div class="bb-message-system" data-read="{{#unless read}}un{{/unless}}read">
+          <div class="pull-right timestamp">{{pretty_ts message.timestamp}}</div>
+          {{> message_delete_button}}
+          {{#with message.file_upload}}
+            <span data-mime-type="{{mimeType}}">{{fileType mimeType}}</span> "<a target="_blank" href="{{webViewLink}}" rel="noopener noreferrer">{{name}}</a>" added to drive folder.
+          {{else}}
+            {{>chat_format_body body=message.body bodyIsHtml=message.bodyIsHtml}}
+          {{/with}}
+        </div>
+      {{else if usefulEnough message}}
+        {{#if message.action}}
+          <div class="bb-message-action {{#if includes message.mention mynick}}bb-message-mention-me{{/if}}" data-nick="{{message.nick}}" data-read="{{#unless read}}un{{/unless}}read">
+            <div class="pull-right timestamp">{{pretty_ts message.timestamp}}</div>
+            {{> message_delete_button}}
+            {{>gravatar nick=message.nick size=16 }}
+            <span title="{{message.nick}}{{nickLocation message.nick}}" class="{{#if nickNear message.nick}}near{{/if}}">{{nickOrName message.nick}}</span> {{>chat_format_body body=message.body bodyIsHtml=message.bodyIsHtml}}
+          </div>
+        {{else}}
+          {{> media_message }}
+        {{/if}}
+      {{/if}}
+    {{/each}}
+    {{! Ensure there's always a small "last-child" here to scroll to.}}
+    <p id="chat-bottom" data-read="unread"></p>
+  </div>
+</template>

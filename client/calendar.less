@@ -1,0 +1,92 @@
+.bb-calendar-event { 
+  font-weight: initial;
+  .when { display: inline-block;}
+}
+.bb-event-summary { font-weight: bold; }
+.dropdown-menu .bb-calendar-event {
+  padding: 3px 20px;
+  color: var(--text-color);
+}
+.btn-group.bb-calendar-attachable {
+  font-size: inherit;
+  height: 24px;
+  .btn {
+    padding: 0;
+    margin: 0;
+    border: 0;
+    font-size: inherit;
+  }
+  .bb-calendar-event:hover {
+    background-color: var(--barely-darker);
+  }
+}
+
+.bb-event-attend, .bb-event-unattend {
+  cursor: pointer;
+}
+
+#bb-calendar-events-strip, .bb-puzzle-info-events {
+  display: flex;
+  margin-left: 0px;
+  .bb-calendar-event {
+    list-style-type: none;
+    padding: 2px;
+    margin-right: 5px;
+    border: 1px solid black;
+    border-radius: 5px;
+    background-color: hsl(clamp(0, var(--dh-until-start, 300), 300), 100%, var(--calendar-card-lightness));
+    --calendar-card-lightness: 90%;
+    .darkMode & {
+      --calendar-card-lightness: 20%;
+    }
+    div {
+      display: flex;
+      flex-flow: row nowrap;
+      align-items: baseline;
+      i {
+        padding-right: 4px;
+      }
+      &, & :not(i) {
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bb-event-location a {
+        white-space: nowrap;
+      }
+    }
+    
+  }
+  .bb-event-summary { font-size: 110%; }
+}
+
+#bb-calendar-events-strip {
+  flex-flow: row nowrap;
+  overflow-x: auto;
+  .bb-calendar-event {
+    width: 200px;
+  }
+}
+
+.bb-calendar-column {
+  flex-flow: column nowrap;
+  overflow-x: hidden;
+  overflow-y: auto;
+  #bb-calendar-events-strip {
+    flex-flow: column nowrap;
+    margin: 4px 4px 0px 0px;
+    li {
+      margin-bottom: 4px;
+      margin-right: 0px;
+      width: 180px;
+    }
+  }
+}
+
+.bb-puzzle-info-events {
+  flex-flow: column nowrap;
+}
+
+.bb-detach-event {
+  cursor: pointer;
+  margin-left: 2px;
+}

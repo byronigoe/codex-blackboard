@@ -1,0 +1,466 @@
+.navbar-inverse {
+    box-shadow: 0px 2px 4px rgba(0,0,0,0.5);
+}
+
+.bb-chat-callin {
+    position: fixed; top: 5px; left: 10px; z-index: 1050;
+    &.solved {
+      top: 0; left: 0;
+      background: var(--bg-color);
+      padding-left: 15px; padding-right: 8px; padding-bottom: 1px;
+      border: 1px solid #888;
+      border-bottom-right-radius: 5px;
+    }
+}
+.bb-chat-messages {
+  margin-bottom: 41px; /* 41px navbar - 15px padding on #bb-body */
+  @chat-arrow-size: 6px;
+  @chat-arrow-height: 15px;
+  @gravatar-size: 48px;
+  .media + .media.bb-message-followup {
+      margin-top: -9px;
+      &:before, &:after {
+        visibility: hidden;
+      }
+      & > .media-object {
+        visibility: hidden;
+        height: 1px;
+      }
+      .bb-message-body {
+        min-height: 0px;
+        -webkit-border-top-left-radius: 0;
+        -webkit-border-top-right-radius: 0;
+           -moz-border-radius-topleft: 0;
+           -moz-border-radius-topright: 0;
+                border-top-left-radius: 0;
+                border-top-right-radius: 0;
+        .media-heading { display: none; }
+      }
+  }
+  &.bb-starred-messages {
+    padding: 0px;
+    margin-bottom: 0px;
+    clear: both;
+  }
+  .bb-message-star {
+    display: inline-block;
+    float: right;
+    padding-right: 0.3em;
+    position: relative;
+    width: 1em;
+    height: 1em;
+    &::before, &::after {
+      font-family: "Font Awesome 5 Free";
+      content: "\f005";
+      position: absolute;
+      right: 3px;
+    }
+    &::before { font-weight: 900; }
+    &::after { font-weight: 400; }
+  }
+  .bb-delete-message {
+    position: relative;
+    float: right;
+    cursor: pointer;
+    padding-right: 0.3em;
+    height: 1em;
+    width: 1em;
+    &::before {
+      font-family: "Font Awesome 5 Free";
+      position: absolute;
+      right: 3px;
+      font-weight: 900;
+      content: "\f2ed";
+    }
+  }
+  .bb-message-star::after {
+    color: grey;
+  }
+  .starred .bb-message-star::before {
+    color: palegoldenrod;
+  } 
+  .bb-message:not(.starred) .bb-message-star::before {
+    color: transparent;
+  }
+  &.can-modify-star {
+    .bb-message-star::after {
+      color: var(--text-color);
+    }
+    .starred .bb-message-star::before {
+      color: gold;
+    }
+  }
+  .media {
+    position: relative; /* establish context for arrow placement */
+    margin-bottom: 6px;
+    .timestamp.pull-right { margin-bottom: 0; }
+    &, &:first-child { margin-top: 6px; }
+    &:before, &:after {
+      content:"";
+      position: absolute;
+      top: @chat-arrow-height;
+      left: @gravatar-size + 10px + 1px - @chat-arrow-size;
+      width: 0; height: 0;
+      border-color: transparent;
+      border-style: solid;
+      border-width: @chat-arrow-size @chat-arrow-size @chat-arrow-size 0;
+    }
+    &:before {
+      border-width: (@chat-arrow-size + 2px) (@chat-arrow-size + 1px) (@chat-arrow-size + 2px) 0;
+      border-right-color: #ccc;
+      top: @chat-arrow-height - 2px;
+      left: @gravatar-size + 10px - @chat-arrow-size;
+    }
+    &:after {
+      --bg-color: inherit;
+      border-right-color: var(--bg-color);
+    }
+  }
+  .bb-message-body {
+    min-height: @gravatar-size; /* match gravatar height */
+    background-color: var(--bg-color);
+    box-sizing: border-box;
+    padding: 2px 5px;
+    border: 1px solid #ccc;
+    -webkit-border-radius: 5px;
+       -moz-border-radius: 5px;
+            border-radius: 5px;
+    .media-heading {
+      margin-bottom: 0;
+      color: #666;
+      
+      .darkMode & {
+        color: #999;
+      }
+    }
+  }
+  .bb-message-pm {
+    --bg-color: rgb(232, 237, 255);
+    
+    .darkMode & {
+      --bg-color: rgb(40, 60, 78);
+    }
+  }
+  .bb-message-mention-me {
+    --bg-color: rgb(232, 255, 235);
+    
+    .darkMode & {
+      --bg-color: rgb(31, 54, 28);
+    }
+  }
+  .bb-message-presence {
+    display: inline-block;
+    padding-right: 10px;
+    &:before {
+      .glyphicon;
+    }
+    &.join:before {
+      content: "\f067"
+    }
+    &.part:before {
+      content: "\f068"
+    }
+    & > img {
+      padding-right: 3px;
+    }
+  }
+  .bb-message-system {
+    color: #888;
+    font-size: 12px;
+    line-height: 16px;
+  }
+  .bb-message-tweet {
+    .fab.fa-twitter {
+      color:  #38A1F3;
+    }
+    blockquote {
+      padding-bottom: 0;
+      margin-bottom: 0;
+      border-left-color: #38A1F3;
+    }
+  }
+  .bb-message-action {
+    font-weight: bold; background: #eee; color: #444;
+    padding: 2px 0;
+    
+    .darkMode & {
+      background: #444;
+      color: #eee;
+    }
+    &.bb-message-mention-me {
+      background:#ded;
+      
+      .darkMode & {
+        background: #454;
+      }
+    }
+  }
+  .bb-message-action, .bb-message-system {
+    padding-left: 80px;
+    padding-right: 5px;
+  }
+  .bb-message-body, .bb-message-action, .bb-message-system {
+    .timestamp {
+      color: #ccc;
+      
+      padding-right: 5px;
+    }
+  }
+  .bb-message-last-read {
+    color: #960;
+    border-bottom: 2px solid #960;
+    .darkMode & {
+      color: #fd9;
+      border-bottom: 2px solid #fd9;
+    }
+    font-size: 8px;
+    line-height: 8px;
+    margin-top: -8px;
+    padding-left: 1px;
+  }
+}
+table.poll {
+  width: 100%;
+  td.results {
+    width: 100%;
+    .progress {
+      width: 100%;
+      margin-bottom: 0px;
+      .bar { overflow: hidden } 
+    } 
+  }
+  td.option button {
+    width: 100%;
+    white-space: nowrap;
+    @media (max-width: 767px) { white-space: initial; } 
+  }
+}
+[data-mime-type]::before {
+  display: inline-block;
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  margin-right: 0.5em;
+  content: "\f382"; /* cloud-upload-alt */
+}
+[data-mime-type="application/vnd.google-apps.document"]::before {
+  content: "\f15c"; /* file-alt */
+  color: #4285f4;
+}
+[data-mime-type="application/vnd.google-apps.spreadsheet"]::before {
+  content: "\f0ce"; /* table */
+  color: #0F9D58;
+}
+[data-mime-type="application/vnd.google-apps.jam"]::before {
+  content: "\f51b"; /* chalkboard */
+  color: #f57c00;
+}
+[data-mime-type="application/vnd.google-apps.map"]::before {
+  content: "\f5a0"; /* map-marked-alt */
+  color: #d94134;
+}
+[data-mime-type="application/vnd.google-apps.folder"]::before {
+  content: "\f07b"; /* folder */
+}
+[data-mime-type="application/pdf"]::before {
+  content: "\f1c1"; /* file-pdf */
+  color: #F40F02;
+}
+[data-mime-type$="/javascript"]::before {
+  content: "\f3b9"; /* js-square */
+}
+[data-mime-type="text/x-python"]::before {
+  content: "\f3e2"; /* python */
+}
+[data-mime-type="text/html"]::before {
+  content: "\f1c9"; /* file-code */
+}
+[data-mime-type="text/plain"]::before {
+  content: "\f15c"; /* file-alt */
+}
+[data-mime-type="application/zip"]::before {
+  content: "\f1c6"; /* file-archive */
+}
+[data-mime-type^="image/"]::before {
+  content: "\f1c5"; /* file-image */
+}
+[data-mime-type^="video/"]::before {
+  content: "\f1c8"; /* file-video */
+}
+[data-mime-type^="audio/"]::before {
+  content: "\f1c7"; /* file-audio */
+}
+
+.glyphicon {
+  display: inline-block;
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+}
+.glyphicon-white {
+  .glyphicon;
+  color: var(--bg-color);
+}
+.bb-message-body, .bb-puzzle {
+  .near {
+    /*border: 1px dashed #cc0;*/
+    &:before {
+      .glyphicon;
+      content: "\f3c5";
+      opacity: 0.6;
+    }
+  }
+}
+.bb-puzzle .background.near:before { opacity: 0.2; }
+
+.bb-tiny-chat-messages() {
+  .bb-chat-messages {
+    .media {
+      margin-top: 0px;
+      margin-bottom: 0px;
+      /* hide chat bubble arrows when display gets too narrow */
+      &:before, &:after { display: none; }
+      .timestamp { float: right; /* still */ }
+      .media-object.pull-left { float: left; /* still */ margin: 0px; }
+      .img-rounded {
+                border-radius: 0px;
+          -moz-border-radius: 0px;
+        -webkit-border-radius: 0px;
+      }
+    }
+    .media + .media.bb-message-followup { margin-top: -4px; }
+    .bb-message-action, .bb-message-system { padding-left: 6px; }
+    .bb-message-last-read { margin-left: 0px; margin-right: 0px; }
+    .bb-message-body {
+      /* min-height: 0; */
+              border-radius: 0px;
+        -moz-border-radius: 0px;
+      -webkit-border-radius: 0px;
+    }
+  }
+}
+.bb-puzzleround {
+  .bb-tiny-chat-messages();
+}
+
+@media (max-width: 480px) {
+  .bb-tiny-chat-messages();
+}
+/*
+@media (max-width: 432px) {
+  .bb-chat-messages .media-object.pull-left { display: none; }
+} 
+*/
+
+.bb-chat-presence-block {
+  display: block;
+  position: absolute;
+  bottom: calc(36px + var(--jitsi-height, 0px));
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-height: 150px;
+  overflow: auto;
+  background: var(--bg-color);
+  opacity: .85;
+  border-top: 1px solid var(--text-color);
+  .bb-avatar {
+    width: 48px;
+  }
+}
+
+.bb-chat-footer {
+  height: 36px;
+  background: url('/img/irongrip.png');
+  display: flex;
+  flex-direction: row;
+  .bb-show-whos-here {
+    flex-grow: 0;
+    i {display: block; }
+  }
+}
+
+#messageForm {
+  flex-grow: 1;
+  padding-left: 0;
+  padding-right: 10px;
+  textarea {
+    overflow: hidden;
+    margin-bottom: 0; margin-top: 5px;
+    resize: none; height: 30px;
+  }
+  .typeahead {
+    display: block;
+  }
+}
+#messageInput {
+  margin-top: 3px;
+  &.error {
+    background-color: pink;
+    border: 1px solid red;
+  }
+}
+@media (min-width: 481px) and (max-width: 980px) {
+  /* re-fix the chat footer to the bottom */
+  .navbar-fixed-bottom {
+    position: fixed;
+    margin-left: 0; margin-right: 0;
+    .navbar-inner { padding: 0; margin-bottom: -1px;}
+  }
+  .bb-chat-messages { margin-bottom: 15px+26px; }
+}
+@media (max-width: 480px) {
+  /* navbar becomes unfixed below 980px */
+  .bb-chat-messages { margin-bottom: 0; }
+  .navbar-fixed-bottom { margin-top: 0; }
+  /* Need this amount of specificity to override .row-fluid rule. */
+  #bb-body .bb-splitter #messages { padding-top: 0px; }
+}
+@media(min-width: 981px) {
+  #bb-content > #messages {
+    & > .bb-message, & > .bb-message-action {
+      margin-left: 20px;
+      margin-right: 20px;
+    }
+  }
+}
+
+.modal .warning {
+  color: red; margin-bottom: 10px;
+}
+
+.inline-image {
+  max-width: 200px;
+  max-height: 200px;
+  &.image-loading {
+    width: 1px;
+    height: 1px;
+  }
+}
+
+.inline-image:hover {
+  max-width: 2000px;
+  max-height: 2000px;
+}
+
+.highlight-nick {
+  color: #0000ff;
+  .darkMode & {
+    color: #99f;
+  }
+}
+
+.bb-join-jitsi {
+  display: flex;
+  flex-flow: column nowrap;
+  justify-content: center;
+  position: relative;
+  .presence-count {
+    border-radius: 7px;
+    background-color: green;
+    line-height: 14px;
+    padding-right: 4px;
+    padding-left: 4px;
+    position: absolute;
+    bottom: 2px;
+    right: 0;
+  }
+}

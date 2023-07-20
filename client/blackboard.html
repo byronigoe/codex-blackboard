@@ -1,0 +1,544 @@
+<template name="blackboard">
+<div class="bb-menu-button">
+<button class="btn btn-inverse btn-small bb-show-menu">
+<i class="fas fa-list"></i>
+</button>
+<div class="btn-group bb-unlock-group">
+  <a href="/" title="Protect page" data-canEdit="false"
+          class="bb-protect btn btn-small btn-inverse {{#unless canEdit}}active{{/unless}}">
+    <i class="fas fa-lock"></i>
+  </a>
+  <a href="/edit" title="Allow edits to puzzles" data-canEdit="true"
+          class="bb-unprotect btn btn-small btn-inverse {{#if canEdit}}active{{/if}}">
+    <i class="fas fa-lock-open"></i>
+  </a>
+</div>
+</div>
+<div class="bb-menu-drawer fade">
+  <ul class="nav nav-list bb-sidenav">
+    <li><a href="/logistics"><i class="fas fa-dolly"></i> Logistics</a></li>
+    <li><a href="https://www.github.com/{{whoseGitHub}}/codex-blackboard/issues" target="_blank" rel="noopener noreferrer"><i class="fab fa-github"></i> Issues</a></li>
+    {{#with driveFolder}}
+      <li><a href="{{drive_link this}}" target="_blank" rel="noopener noreferrer"><i class="fab fa-google-drive"></i> Google Drive Folder</a></li>
+    {{/with}}
+    <li class="separator"></li>
+    {{>calendar_link}}
+    {{#if favorites.count}}
+      <li><a href="#favorites"><i class="fas fa-chevron-right"></i>Favorites</a></li>
+    {{/if}}
+    {{#each rounds}}
+    <li class="nav-header">{{name}}</li>
+    {{#each metas}}
+    <li><a href="#m{{puzzle._id}}"><i class="fas fa-chevron-right"></i>
+    {{puzzle.name}}</a></li>
+    {{/each}}
+    {{#if unassigned.length}}
+    <li><a href="#unassigned{{_id}}"><i class="fas fa-chevron-right"></i>Unassigned</a></li>
+    {{/if}}
+    {{/each}}
+    <li class="fill"></li>
+    {{#if hasJitsiLocalStorage}}
+      <li class="nav-header">Troubleshooting</li>
+      <li><a href="#" class="bb-clear-jitsi-storage" title="Jitsi can sometimes store so much data in local storage that when it tries to pass it to the iframe, it exceeds the browser's URL size limit. Click here to clear that storage.">Clear Jitsi Local Storage</a></li>
+    {{/if}}
+  </ul>
+</div>
+<!-- puzzles w/ index -->
+  <div id="bb-tables" class="{{#if canEdit}}bb-canEdit{{/if}}">
+    <!-- content div -->
+    <div class="row-fluid">
+      <h1 class="bb-blackboard-h1 span5">
+        <span class="bb-no-wrap"><span class="bb-hide-when-narrower">{{teamName}}</span></span>
+        <span class="bb-hide-when-narrow">Puzzle </span>
+        <span class="bb-no-wrap">Blackboard</span>
+      </h1>
+      <div class="btn-toolbar text-right bb-top-buttons span7">
+        {{>onduty_control}}
+        {{> favorite_mechanics}}
+        {{#if canEdit}}
+          <div class="btn-group">
+            <button class="btn btn-mini btn-inverse bb-add-round">
+              <i class="bb-add-icon fas fa-plus"></i>
+              Add new round
+            </button>
+          </div>
+        {{else if notificationsEnabled}}
+          <div class="btn-group text-left">
+            <button class="btn btn-small bb-notification-enabled{{#if anyNotificationsEnabled}} btn-inverse{{/if}}">
+              <i class="fas {{#if anyNotificationsEnabled}}fa-bullhorn{{else}}fa-power-off{{/if}}"></i>
+              Notifications
+            </button>
+            <button class="btn btn-small dropdown-toggle{{#if anyNotificationsEnabled}} btn-inverse{{/if}}" data-toggle="dropdown">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu pull-left bb-notification-controls">
+              {{#each notificationStreams}}
+                <li><a name="bb-notification-{{name}}"><label class="checkbox">
+                  <input type="checkbox" id="bb-notification-{{name}}"
+                        data-notification-stream="{{name}}"
+                        checked="{{notificationStreamEnabled name}}">
+                {{label}}
+                </label></a></li>
+              {{/each}}
+            </ul>
+          </div>
+        {{else if notificationsAsk}}
+          <div class="btn-group text-left">
+            <button class="btn btn-small bb-notification-ask">
+              <i class="fas fa-power-off"></i>
+              Enable notifications
+            </button>
+          </div>
+        {{/if}}
+        <div class="btn-group bb-sort-order">
+          <button class="btn btn-small {{#if sortReverse}}active{{/if}}"
+                  data-sortReverse="true" title="Newest rounds first">
+            <i class="fas fa-clock"></i>
+            <i class="fas fa-long-arrow-alt-up"></i>
+          </button>
+          <button class="btn btn-small {{#unless sortReverse}}active{{/unless}}"
+                  data-sortReverse="false" title="Oldest rounds first">
+            <i class="fas fa-clock"></i>
+            <i class="fas fa-long-arrow-alt-down"></i>
+          </button>
+        </div>
+        {{#unless canEdit}}
+          {{> options_dropdown}}
+        {{/unless}}
+      </div>
+    </div>
+    {{> starred_messages canModify=canEdit}}
+    {{> calendar_strip allow_detach=canEdit}}
+    <table class="table table-bordered table-condensed bb-puzzle">
+      <thead>
+        {{#unless compactMode}}
+        <tr>
+          <th class="puzzle-name">Name</th>
+          {{#each column in visibleColumns}}
+            {{> Template.dynamic template=(concat "blackboard_column_header_" column._id)}}
+          {{/each}}
+        </tr>
+        {{/unless}}
+      </thead>
+      {{#if all (not canEdit) filter}}
+        <tbody>
+          <tr><th colspan="{{nCols}}" id="searchResults"><h2>Search Results</h2></th></tr>
+          {{#each searchResults}}
+            {{>blackboard_puzzle _id=_id parent="search" puzzle=this}}
+          {{/each}}
+        </tbody>
+      {{else}}
+        {{#if stuckToTop}}
+          {{#let stucks=stuckPuzzles}}
+            {{#if stucks.count}}
+              <tbody>
+                <tr><th colspan="{{nCols}}" id="stucks"><h2>Stuck Puzzles</h2></th></tr>
+                {{#each stucks}}
+                  {{>blackboard_puzzle _id=_id parent="stuck" puzzle=this}}
+                {{/each}}
+              </tbody>
+            {{/if}}
+          {{/let}}
+        {{/if}}
+        {{#unless canEdit}}
+          {{#let faves=favorites}}
+            {{#if faves.count}}
+              <tbody>
+                <tr><th colspan="{{nCols}}" id="favorites"><h2>Favorite Puzzles</h2></th></tr>
+                {{#each faves}}
+                  {{>blackboard_favorite_puzzle}}
+                {{/each}}
+              </tbody>
+            {{/if}}
+          {{/let}}
+        {{/unless}}
+        {{#if all add_round sortReverse}}{{> blackboard_add_round done=addingRound}}{{/if}}
+        {{#each rounds}}
+          {{> blackboard_round}}
+        {{/each}}
+        {{#if all add_round (not sortReverse)}}{{> blackboard_add_round done=addingRound}}{{/if}}
+      {{/if}}
+    </table>
+  </div><!-- bb-tables -->
+</template>
+
+<template name="blackboard_add_round">
+  <tbody>
+    <tr>
+      <th colspan="{{nCols}}" id="bb-new-round" class="bb-round-header">
+        {{> create_object type="rounds" done=done}}
+      </th>
+    </tr>
+  </tbody>
+</template>
+
+<template name="blackboard_column_header_answer">
+  <th class="puzzle-answer">Solution</th>
+</template>
+
+<template name="blackboard_column_header_status">
+  <th class="puzzle-status">Status</th>
+</template>
+
+<template name="blackboard_column_header_working">
+  <th class="puzzle-working">Working on this
+    <span class="button-group">
+      <a href="#" name="bb-show-filter-by-user" title="Filter puzzles by solver" class="dropdown-toggle bb-show-filter-by-user" data-toggle="dropdown"><i class="fas fa-search"></i></a>
+      <ul class="bb-filter-by-user-dropdown dropdown-menu">
+        <li class="form-search">
+          <div class="input-append">
+            <input type="text" class="search-query bb-filter-by-user">
+            <button class="btn bb-clear-filter-by-user"><i class="fas fa-times"></i></button>
+          </div>
+        </li>
+      </ul>
+    </span>
+  </th>
+</template>
+
+<template name="blackboard_column_header_update">
+  <th class="puzzle-update">Last update</th>
+</template>
+
+<!-- this exists to add a subscription. -->
+<template name="blackboard_favorite_puzzle">
+  {{>blackboard_puzzle _id=_id parent="favorites" puzzle=this}}
+</template>
+
+<template name="blackboard_round">
+  {{#if showRound}}
+    {{#let m=metas u=unassigned}}
+      <tbody>
+      <tr><th colspan="{{nCols}}" id="round{{_id}}" class="bb-round-header {{#if collapsed}}collapsed{{/if}}">
+      {{#edit_object_title id=_id type="rounds" editable=canEdit}}
+        {{#unless puzzles.length}}
+          <i class="bb-delete-icon fas fa-times pull-left"
+            title="Delete this round"></i>
+        {{/unless}}
+      {{else}}
+        <button class="collapse-toggle"></button>
+        {{>link id=_id title="Chat room for round" chat=true icon="fas fa-comments" class="pull-right bb-round-chat"}}
+        {{#if link}}<a class="pull-right bb-round-chat" target="_blank" href="{{link}}" title="Link to hunt site" rel="noopener noreferrer"><i class="fas fa-link"></i></a>{{/if}}
+      {{/edit_object_title}}
+      {{#unless compactMode}}
+        <table class="bb-tag-table"><tbody>
+          {{>tag_table_rows editable=canEdit adding=addingTag type="rounds" id=_id}}
+          {{#if canEdit}}<tr><td>Hunt site URL</td>{{>edit_field type="rounds" id=_id field="link"}}</tr>{{/if}}
+        </tbody></table>
+      {{/unless}}
+      {{#if canEdit}}
+        <div class="bb-round-buttons">
+          <div class="btn-group">
+            <button class="btn btn-mini btn-inverse bb-add-meta {{#if addingMeta}}active{{/if}}">
+              <i class="fas fa-plus"></i>
+              Add new meta to this round
+            </button>
+            <button class="btn btn-mini btn-inverse dropdown-toggle" data-toggle="dropdown">
+              <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+              <li><a class="bb-add-puzzle">Add unassigned puzzle</a></li>
+            </ul>
+          </div>
+          <button class="btn btn-mini btn-inverse bb-add-tag {{#if addingTag.adding}}active{{/if}}">
+            <i class="fas fa-tag"></i>
+            Add new tag to this round
+          </button>
+          <button class="btn btn-mini btn-inverse bb-move-down">
+            <i class="fas fa-arrow-down"></i>
+            Move round down
+          </button>
+          <button class="btn btn-mini btn-inverse bb-move-up">
+            <i class="fas fa-arrow-up"></i>
+            Move round up
+          </button>
+        </div>
+      {{/if}}
+      </th></tr></tbody>
+      {{#if any canEdit (not collapsed)}}
+        {{#if all addingMeta sortReverse}}
+          {{>blackboard_new_meta adding=addingMetaParams}}
+        {{/if}}
+        {{#each meta in m}}
+          {{> blackboard_meta _id=meta._id parent=_id puzzle=meta.puzzle reorderable=true}}
+        {{/each}}
+        {{#if all addingMeta (not sortReverse)}}
+          {{>blackboard_new_meta adding=addingMetaParams}}
+        {{/if}}
+        {{#if any u.length addingUnassigned}}
+          <tbody class="unassigned" id="unassigned{{_id}}">
+          <tr class="unassigned"><th colspan="{{nCols}}">Unassigned</th></tr>
+          {{#each u}}
+            {{> blackboard_puzzle puzzle=puzzle parent=parent reorderable=true }}
+          {{/each}}
+          {{#if addingUnassigned}}
+            {{>blackboard_new_puzzle class="puzzle" adding=addingUnassignedParams}}
+          {{/if}}
+          </tbody>
+        {{/if}}
+      {{/if}}
+    {{/let}}
+  {{/if}}
+</template>
+
+<template name="blackboard_status_grid">
+  <div class="bb-status-grid">
+    {{#each rounds}}
+      {{#each metas}}
+        <div class="bb-status-grid-meta-group" style="--meta-color: {{color}}">
+          {{#let p=(puzzles puzzle.puzzles)}}
+          {{#if puzzle.solved}}
+            {{>link class="bb-status-grid-meta" id=_id title=puzzle.name text=(abbrev puzzle.name)}}
+            <span class="bb-status-grid-solved-count {{#if equal (numSolved p) p.length}}all-solved{{/if}}">{{numSolved p}}/{{p.length}}</span>
+            <div class="bb-status-grid-puzzles">{{#each p}}{{#unless puzzle.solved}}
+              {{! whitespace collapsed for :empty selector}}
+              <span class="bb-status-grid-cell bb-status-{{#if stuck puzzle}}stuck{{else}}unsolved{{/if}}">
+                {{>link id=puzzle._id title=puzzle.name text=puzzle_num}}
+              </span>
+            {{/unless}}{{/each}}</div>
+          {{else}}
+            {{>link class="bb-status-grid-meta" id=_id text=puzzle.name}}
+            <div class="bb-status-grid-puzzles">{{#each (puzzles puzzle.puzzles)}}
+              <span class="bb-status-grid-cell bb-status-{{#if puzzle.solved}}solved{{else if stuck puzzle}}stuck{{else}}unsolved{{/if}}">
+                {{>link id=puzzle._id title=puzzle.name text=puzzle_num}}
+              </span>
+            {{/each}}</div>
+          {{/if}}
+          {{/let}}
+        </div>
+      {{/each}}
+      {{#let u=unassigned}}
+      {{#if u.length}}
+        <div class="bb-status-grid-meta-group" style="--meta-color: var(--bg-color)">
+          {{#let p=(puzzles u)}}{{#let n=(numSolved p)}}
+            {{>link class="bb-status-grid-meta" id=_id title=name text=(abbrev name)}}
+            <span class="bb-status-grid-solved-count {{#if equal n p.length}}all-solved{{/if}}">{{n}}/{{p.length}}</span>
+            <div class="bb-status-grid-puzzles">{{#each p}}{{#unless puzzle.solved}}
+              {{! whitespace collapsed for :empty selector}}
+              <span class="bb-status-grid-cell bb-status-{{#if stuck puzzle}}stuck{{else}}unsolved{{/if}}">
+                {{>link id=puzzle._id title=puzzle.name text=puzzle_num}}
+              </span>
+            {{/unless}}{{/each}}</div>
+          {{/let}}{{/let}}
+        </div>
+      {{/if}}
+      {{/let}}
+    {{/each}}
+  </div><!-- bb-status-grid -->
+</template>
+
+<template name="blackboard_othermeta_link">
+  <span class="bb-othermeta">{{#with color}}<span class="bb-colorbox" style="background-color: {{this}}"></span>{{/with}}
+  {{>link id=_id}}</span>
+</template>
+
+<template name="blackboard_puzzle_cells">
+  <td class="puzzle-name">
+    {{#edit_object_title id=puzzle._id type="puzzles" link_title=true editable=canEdit}}
+      <i class="bb-delete-icon fas fa-times pull-left"
+        title="Delete this puzzle"></i>
+      {{> fix_puzzle_drive puzzle=puzzle._id}}
+    {{else}}
+      {{#if collapse}}<button class="collapse-toggle"></button>{{/if}}
+      {{#if equal puzzle.drive_status "creating"}}
+        <i class="pull-right fas fa-ellipsis-h bb-drive-status" title="creating..."></i>
+      {{else if equal puzzle.drive_status "failed"}}
+        <i class="pull-right fas fa-dumpster-fire bb-drive-status" title="Drive creation failed: {{puzzle.drive_error_message}}"></i>
+      {{else if equal puzzle.drive_status "fixing"}}
+        <i class="pull-right fas fa-cog fa-spin bb-drive-status" title="fixing..."></i>
+      {{/if}}
+      {{#if puzzle.spreadsheet}}<a href="{{spread_link puzzle.spreadsheet}}" target="_blank" title="Spreadsheet for puzzle" class="pull-right" rel="noopener noreferrer"><i class="fas fa-th"></i></a>{{/if}}
+      {{#if puzzle.doc}}<a href="{{doc_link puzzle.doc}}" target="_blank" title="Doc for puzzle" class="pull-right" rel="noopener noreferrer"><i class="fas fa-file"></i></a>{{/if}}
+      {{>link id=puzzle._id title="Chat room for puzzle" chat=true class="pull-right" icon="fas fa-comments"}}
+      {{#if puzzle.link}}<a class="pull-right" href="{{puzzle.link}}" target="_blank" title="Link to hunt site" rel="noopener noreferrer"><i class="fas fa-puzzle-piece"></i></a>{{/if}}
+      {{#with jitsiLink}}<a class="pull-right" href="{{this}}" title="Link to video call" target="jitsi" rel="noopener noreferrer"><i class="fas fa-video"></i></a>{{/with}}
+      {{>favorite puzzle}}
+    {{/edit_object_title}}
+    {{#if canEdit}}
+      <div class="bb-puzzle-add-move">
+      <button class="btn btn-link bb-add-tag"
+            title="Add tag to puzzle">
+        <i class="fas fa-tags"></i>
+        <i class="fas fa-plus"></i>
+      </button>
+      {{#if reorderable}}
+        <button class="btn btn-link bb-move-down"><i class="fas fa-arrow-down"></i></button>
+        <button class="btn btn-link bb-move-up"><i class="fas fa-arrow-up"></i></button>
+      {{/if}}
+      </div>
+    {{/if}}
+    {{#with puzzle}}
+      {{#unless compactMode}}
+        <table class="bb-tag-table"><tbody>
+        {{>tag_table_rows editable=canEdit adding=addingTag type="puzzles" id=_id}}
+        {{#if canEdit}}
+          {{#if canChangeMeta}}
+          <tr>
+            <td>is Meta:</td>
+            <td><input class="bb-set-is-meta" type="checkbox" checked={{isMeta}} /></td>
+          </tr>
+          {{/if}}
+          {{#if isMeta}}
+          <tr>
+            <td>Sort Order:</td>
+            <td><div class="btn-group bb-puzzle-order">
+              <button class="btn btn-mini {{#unless order_by}}active{{/unless}}" data-sort-order="" title="Manual">
+                <i class="fas fa-exchange-alt fa-rotate-90"></i>
+              </button>
+              <button class="btn btn-mini {{#if equal order_by "name"}}active{{/if}}" data-sort-order="name" title="Alphabetical">
+                <i class="fas fa-sort-alpha-down"></i>
+              </button>
+            </div></td>
+          </tr>
+          {{/if}}
+          <tr>
+            <td>Feeds Into:</td>
+            <td>
+              <span class="comma-list">{{#each allMetas}}{{> blackboard_unfeed_meta puzzle=.. meta=this}} {{else}}(none){{/each}}</span>
+              {{#with unfedMetas}}{{#if this.count}}
+                <span class="btn-group bb-feed-meta">
+                  <button class="btn btn-mini dropdown-toggle" data-toggle="dropdown">
+                  Feed Meta <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    {{#each this}}<li>{{> blackboard_addmeta_entry}}</li>{{/each}}
+                  </ul>
+                </span>
+              {{/if}}{{/with}}
+            </td>
+          </tr>
+          <tr><td>Mechanics:</td><td>{{> puzzle_mechanics}}</td></tr>
+          <tr><td>Hunt Site URL</td>{{>edit_field type="puzzles" id=_id field="link"}}</tr>
+        {{else}}
+          {{#with otherMetas}}
+          <tr>
+            <td>Also feeds:</td>
+            <td class="comma-list">{{#each this}}{{> blackboard_othermeta_link}} {{/each}}</td>
+          </tr>
+          {{/with}}
+          {{#if mechanics.length}}
+          <tr>
+            <td>Mechanics:</td>
+            <td class="comma-list">
+              {{#each mechanics}}
+                <span class="{{#if yourFavoriteMechanic}}favorite-mechanic{{/if}}">{{mechanicName}}</span>
+              {{/each}}
+            </td>
+          </tr>
+          {{/if}}
+        {{/if}}
+        {{>calendar_puzzle_cell}}
+        </tbody></table>
+      {{/unless}}
+    {{/with}}
+  </td>
+  {{#each column in visibleColumns}}
+    {{> Template.dynamic template=(concat "blackboard_column_body_" column._id)}}
+  {{/each}}
+</template>
+
+<template name="blackboard_column_body_answer">
+  {{>edit_tag_value type="puzzles" id=puzzle._id name="Answer" editable=canEdit class="puzzle-answer answer"}}
+</template>
+
+<template name="blackboard_column_body_status">{{!
+  }}{{#edit_tag_value type="puzzles" id=puzzle._id name="Status" editable=canEdit class="puzzle-status"}}{{!
+    }}{{#if status}}<span class="bb-who-stuck">&mdash; by {{>gravatar_with_badges nick=set_by size=16}} {{nickAndName set_by}}</span>{{/if}}{{!
+  }}{{/edit_tag_value}}{{!
+}}</template>
+
+<template name="blackboard_column_body_working"><td class="puzzle-working"><div class="in-jitsi" title="In Jitsi">{{#each whos_working 1}}{{> nick_presence }} {{/each}}</div><div class="in-chat" title="In Chat">{{#each whos_working 0}}{{> nick_presence }} {{/each}}</div></td></template>
+
+<template name="blackboard_column_body_update">
+  <td class="puzzle-update">
+    {{#if puzzle.solved}}solved {{pretty_ts timestamp=puzzle.solved style="brief duration"}}
+      {{#with solverMinutes}}<br><i class="fas fa-user-clock"></i> {{this}} solver-minutes{{/with}}
+    {{else}}
+      {{#if stuck puzzle}}stuck since {{pretty_ts timestamp=puzzle.tags.status.touched style="brief duration"}}
+      {{else}}added {{pretty_ts timestamp=puzzle.created style="brief duration"}}
+      {{/if}}
+      {{#if puzzle.drive_touched}}<div class="bb-drive-activity">{{>time_since timestamp=puzzle.drive_touched verb="Active"}} active {{pretty_ts timestamp=puzzle.drive_touched style="brief duration"}}</div>{{/if}}
+    {{/if}}
+    {{#if puzzle.last_message_timestamp}}
+      <div class="bb-recent-puzzle-chat {{#if new_message}}updated{{/if}}">
+        last chat {{pretty_ts timestamp=puzzle.last_message_timestamp style="brief duration"}}
+      </div>
+    {{/if}}
+  </td>
+</template>
+
+<template name="blackboard_addmeta_entry">
+  <a href="#" data-puzzle-id="{{_id}}">
+    {{#with color}}<span class="bb-colorbox" style="background-color: {{this}}"></span>{{/with}}
+    {{name}}
+  </a>
+</template>
+
+<template name="blackboard_unfeed_meta">
+  <span>
+    <i class="bb-unfeed-icon fas fa-times" title="Stop feeding this meta"></i>
+    {{> blackboard_othermeta_link meta}}
+  </span>
+</template>
+
+<template name="blackboard_meta">
+  {{#if showMeta}}
+  {{#let nh=numHidden ps=puzzles}}
+  <tbody class="meta" id="m{{puzzle._id}}" data-puzzle-id="{{puzzle._id}}"
+        style="{{#unless boringMode}}--meta-color: {{color}}{{/unless}}">
+    <tr class="meta {{#if stuck puzzle}}bb-status-stuck{{/if}} {{#if collapsed}}collapsed{{/if}}">
+      {{> blackboard_puzzle_cells _id=_id parent=parent puzzle=puzzle reorderable=reorderable collapse=true}}
+    </tr>
+    {{#if any canEdit (not collapsed)}}
+      {{#each p in ps}}
+        {{> blackboard_puzzle _id=p._id parent=puzzle._id puzzle=p.puzzle reorderable=(not puzzle.order_by)}}
+      {{else unless (any num_puzzles adding nh)}}
+        <tr class="round-empty"><td colspan="{{nCols}}">No puzzles feed this meta yet.</td></tr>
+      {{/each}}
+      {{#if adding}}
+        {{>blackboard_new_puzzle class="puzzle" adding=addingPuzzle}}
+      {{/if}}
+    {{/if}}
+  {{#if canEdit}}
+  <tr class="metafooter"><td colspan="{{nCols}}">
+    <div class="bb-meta-buttons">
+      <button class="btn btn-mini btn-inverse bb-add-puzzle {{#if adding}}active{{/if}}">
+        <i class="fas fa-plus"></i>
+        Create new puzzle feeding this meta
+      </button>
+    </div>
+  </td></tr>
+  {{else unless collapsed}}
+    {{#with nh}}
+      <tr class="metafooter"><td colspan="{{nCols}}">
+        <span class="num-hidden">({{this}} solved puzzle{{#if plural this}}s{{/if}} hidden)</span>
+      </td></tr>
+    {{/with}}
+  {{/if}}
+  </tbody>
+  {{/let}}
+  {{/if}}
+</template>
+
+<template name="nick_presence">
+<span class="nick {{#unless jitsi}}background{{/unless}} {{#if nickNear _id}}near{{/if}}"
+      data-nick="{{_id}}" title="{{nickOrName _id}}{{nickLocation _id}}">{{> gravatar nick=_id size=16 }}</span>
+</template>
+
+<template name="blackboard_puzzle">
+  <tr class="puzzle {{#if stuck puzzle}}bb-status-stuck{{/if}}" draggable="{{all canEdit reorderable}}" data-puzzle-id="{{puzzle._id}}">
+    {{> blackboard_puzzle_cells}}
+ </tr>
+</template>
+
+<template name="blackboard_new_puzzle">
+  <tr class="{{class}}"><td id="bb-new-puzzle" class="puzzle-name" colspan="{{nCols}}">
+    {{> create_object type="puzzles" done=adding params=adding.params}}
+  </td></tr>
+</template>
+
+<template name="blackboard_new_meta">
+  <tbody class="meta">
+    {{>blackboard_new_puzzle class="meta" adding=adding}}
+  </tbody>
+</template>

@@ -1,0 +1,60 @@
+
+
+<template name="callin_copy_and_go">
+  {{! Arguments:
+        callin: callin oiject
+        hunt_link: url of the puzzle on the hunt page.
+  }}
+  {{#unless equal callin.callin_type "expected callback"}}
+    {{#if hunt_link}}
+      <a href="{{hunt_link}}" target="_blank" rel="noopener noreferrer" class="copy-and-go btn btn-primary btn-mini" data-clipboard-target="#answer-{{callin._id}}" title="copy, mark submitted, and go">
+        <i class="fas fa-clipboard"></i><i class="fas fa-check"></i><i class="fas fa-share"></i>
+      </a> 
+    {{/if}}
+  {{/unless}}
+</template>
+
+<template name="callin_type_dropdown">
+  <div class="btn-group">
+    <button class="btn btn-info dropdown-toggle bb-callin-type-dropdown {{#unless equal status "pending"}}disabled{{/unless}}" data-toggle="{{#if equal status "pending"}}dropdown{{/if}}" title="{{callinType callin_type}}">
+      {{callinTypeAbbrev callin_type}}
+      {{#if equal status "pending"}}<span class="caret"></span>{{/if}}
+    </button>
+    <ul class="dropdown-menu text-left">
+    {{#each ct in callinTypes}}
+      <li title="{{tooltip ct}}"><a data-callin-type="{{ct}}" href="#">
+        {{typeName ct}}
+      </a></li>
+    {{/each}}
+    </ul>
+  </div>
+</template>
+
+<template name="callin_resolution_buttons">
+  {{#if allowsResponse}}
+    <div class="bb-callin-allows-response">
+      <div class="input-append">
+        <input type="text" class="response{{#if compact}} input-compact{{/if}}" placeholder="Response{{#unless compact}} from HQ{{/unless}}">
+        <button class="btn btn-success bb-callin-correct{{#if compact}} btn-mini{{/if}}" title="{{accept_message}}"><i class="fas fa-check"></i></button>
+        {{#if allowsIncorrect}}
+          <button class="btn btn-danger bb-callin-incorrect{{#if compact}} btn-mini{{/if}}" title="{{reject_message}}"><i class="fas fa-times"></i></button>
+        {{/if}}
+      </div>
+      <button class="btn btn-warning bb-callin-cancel{{#if compact}} btn-mini{{/if}}" title="{{cancel_message}}"><i class="fas fa-trash"></i></button>
+    </div>
+  {{else}}
+    <div class="btn-group bb-callin-resolution">
+      <button class="btn btn-success bb-callin-correct{{#if compact}} btn-mini{{/if}}" title="{{#if compact}}{{accept_message}}{{/if}}">
+        {{#if compact}}<i class="fas fa-check"></i>{{else}}{{accept_message}}{{/if}}
+      </button>
+      {{#if allowsIncorrect}}
+        <button class="btn btn-danger bb-callin-incorrect{{#if compact}} btn-mini{{/if}}" title="{{#if compact}}{{reject_message}}{{/if}}">
+          {{#if compact}}<i class="fas fa-times"></i>{{else}}{{reject_message}}{{/if}}
+        </button>
+      {{/if}}
+      <button class="btn btn-warning bb-callin-cancel{{#if compact}} btn-mini{{/if}}" title="{{#if compact}}{{cancel_message}}{{/if}}">
+        {{#if compact}}<i class="fas fa-trash"></i>{{else}}{{cancel_message}}{{/if}}
+      </button>
+    </div>
+  {{/if}}
+</template>

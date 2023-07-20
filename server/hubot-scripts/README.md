@@ -1,3 +1,6 @@
+Hubot Scripts
+=============
+
 These are stock hubot scripts, with one exception:
 Instead of:
 
@@ -9,7 +12,8 @@ Instead of:
 Use:
 
 ```coffee
-  share.hubot.ping = (robot) ->
+  import { scripts } from '/server/imports/botutil.coffee'
+  scripts.ping = (robot) ->
     robot.commands.push 'cmd1 arg - desc'
     robot.commands.push 'cmd2 arg - desc'
     # stuff

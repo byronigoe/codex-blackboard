@@ -1,0 +1,7 @@
+<template name="graph_page">
+  <div class="bb-graph-buttons">
+    {{> connection_button}}
+    <button class="bb-layout btn" title="randomize layout"><i class="fas fa-random"></i></button>
+  </div>
+  {{#if loaded}}{{> graph}}{{/if}}
+</template>

@@ -1,0 +1,34 @@
+.bb-callin-queue {
+  margin-left: 10px;
+  margin-right: 10px;
+  h1 { font-size: 150%; }
+}
+#bb-callin-table {
+  th, td {
+    @media (max-width: 980px) { font-size: 75%; padding: 6px }
+    @media (max-width: 640px) { font-size: 60%; padding: 4px }
+    @media (max-width: 480px) { font-size: 50%; padding: 2px }
+  }
+}
+div.dupe {
+  font-weight: bold;
+  color: crimson;
+}
+div.interaction {
+  font-weight: bold;
+  color: #006dcc;
+  &::before { content: "(" }
+  &::after { content: ")" }
+}
+input.input-compact {
+  font-size: 10.5px;
+  padding: 0px 6px;
+  width: 60px;
+}
+.bb-callin-allows-response, .bb-answer-submitter {
+  white-space: nowrap;
+}
+.bb-callin-allows-response, .bb-callin-resolution {
+  display: inline-block;
+}
+

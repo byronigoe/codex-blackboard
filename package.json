@@ -4,36 +4,53 @@
   "description": "codex-blackboard ================",
   "main": "index.js",
   "dependencies": {
-    "@babel/runtime": "^7.16.7",
-    "coffeescript": "^2.6.1",
+    "@babel/runtime": "^7.22.6",
+    "@fortawesome/fontawesome-free": "^6.4.0",
+    "@googlemaps/js-api-loader": "^1.16.2",
+    "@googlemaps/markerclusterer": "^2.3.2",
+    "@googlemaps/markerwithlabel": "^2.0.22",
+    "chart.js": "^4.3.0",
+    "chartjs-adapter-dayjs-3": "^1.2.3",
+    "coffeescript": "^2.7.0",
     "css-color-names": "1.0.1",
-    "cytoscape": "^3.20.0",
-    "cytoscape-fcose": "^2.1.0",
+    "cytoscape": "^3.25.0",
+    "cytoscape-fcose": "^2.2.0",
     "cytoscape-layout-utilities": "^1.1.1",
-    "delay": "^5.0.0",
+    "dayjs": "^1.11.9",
+    "delay": "^6.0.0",
     "denodeify": "^1.2.1",
-    "gemoji": "^7.1.0",
-    "googleapis": "^92.0.0",
-    "hubot": "^3.3.2",
-    "hubot-help": "^1.0.1",
+    "favico.js": "^0.3.10",
+    "gemoji": "^8.1.0",
+    "googleapis": "^122.0.0",
+    "hubot": "github:Torgen/hubot",
+    "hubot-help": "^2.1.1",
     "mail-listener6": "^2.0.3",
-    "meteor-node-stubs": "^1.1.0",
-    "node-forge": "^1.2.1",
-    "node-random-name": "^1.0.1",
-    "sanitize-html": "^2.6.1",
-    "twitter-api-v2": "^1.9.1"
+    "md5": "^2.3.0",
+    "meteor-node-stubs": "^1.2.5",
+    "normalize-text": "^2.4.1",
+    "page": "^1.11.6",
+    "sanitize-html": "^2.11.0",
+    "twitter-api-v2": "^1.15.0"
   },
   "devDependencies": {
-    "chai": "^4.3.4",
-    "puppeteer": "^13.1.1",
-    "sinon": "^12.0.1"
+    "@types/chai": "^4.3.5",
+    "@types/sinon": "^10.0.15",
+    "babel-plugin-istanbul": "^6.1.1",
+    "chai": "^4.3.7",
+    "drag-mock": "^1.4.0",
+    "eslint": "^8.45.0",
+    "eslint-plugin-jsonc": "^2.9.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "playwright": "^1.36.1",
+    "prettier": "^3.0.0",
+    "sinon": "^15.2.0"
   },
   "scripts": {
     "test": "meteor test --once --driver-package meteortesting:mocha",
     "test.full": "meteor test --once --driver-package meteortesting:mocha --full-app --settings private/integration_test_settings.json",
-    "coverage": "COVERAGE=1 COVERAGE_OUT_HTML=1 COVERAGE_APP_FOLDER=$PWD/ meteor npm test",
-    "coverage.lcov": "COVERAGE=1 COVERAGE_OUT_LCOVONLY=1 COVERAGE_APP_FOLDER=$PWD/ meteor npm test",
-    "coverage.full.lcov": "COVERAGE=1 COVERAGE_OUT_LCOVONLY=1 COVERAGE_APP_FOLDER=$PWD/ meteor npm run-script test.full"
+    "coverage": "BABEL_ENV=COVERAGE COVERAGE=1 COVERAGE_OUT_HTML=1 COVERAGE_APP_FOLDER=$PWD/ meteor npm test",
+    "coverage.lcov": "BABEL_ENV=COVERAGE COVERAGE=1 COVERAGE_OUT_LCOVONLY=1 COVERAGE_APP_FOLDER=$PWD/ meteor npm test",
+    "coverage.full.lcov": "BABEL_ENV=COVERAGE COVERAGE=1 COVERAGE_OUT_LCOVONLY=1 COVERAGE_APP_FOLDER=$PWD/ meteor npm run-script test.full"
   },
   "repository": {
     "type": "git",
@@ -45,5 +62,14 @@
     "url": "https://github.com/Torgen/codex-blackboard/issues"
   },
   "homepage": "https://github.com/Torgen/codex-blackboard#readme",
-  "private": true
+  "private": true,
+  "babel": {
+    "env": {
+      "COVERAGE": {
+        "plugins": [
+          "istanbul"
+        ]
+      }
+    }
+  }
 }
