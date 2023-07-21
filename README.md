@@ -13,6 +13,12 @@ Meteor app for coordinating solving for our MIT Mystery Hunt team. See the wiki 
 Developing
 ----------
 
+Get the code:
+
+    git clone <https://this-package.git>
+    cd codex-blackboard
+    git submodule update --init --recursive
+
 To run in development mode:
 
     cd codex-blackboard
